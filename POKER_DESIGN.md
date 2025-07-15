@@ -55,35 +55,42 @@
 - **Screen Resolution**: 1280x720 minimum (landscape)
 
 ### 2.2 Technology Stack
-- **Game Engine**: Unity 2024.x LTS
-- **Programming Language**: C# (Unity scripts)
-- **Backend**: Node.js (optional for analytics)
-- **Database**: SQLite (local storage)
-- **Audio**: Unity Audio System
+- **Platform**: Native Android (API 24+)
+- **Programming Language**: Kotlin (primary) with Java interop
+- **UI Framework**: Jetpack Compose (modern) or Android Views (traditional)
+- **Graphics**: Android Canvas API with custom drawables
+- **Database**: Room persistence library (SQLite wrapper)
+- **Audio**: MediaPlayer and SoundPool APIs
+- **Build System**: Gradle with Android Plugin
 
 ### 2.3 Architecture Components
 ```
-┌─────────────────┐
-│   Game Manager  │
-└─────────────────┘
-         │
-┌─────────────────┬─────────────────┬─────────────────┐
-│   Card System   │   UI Manager    │  Audio Manager  │
-└─────────────────┴─────────────────┴─────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│              MainActivity / GameFragment                │
+│                   (Android Lifecycle)                  │
+└─────────────────────────────────────────────────────────┘
+                          │
+┌─────────────────┬─────────────────┬─────────────────────┐
+│  GameViewModel  │  CardRenderer   │   AudioService      │
+│   (MVVM Logic)  │  (Canvas API)   │ (MediaPlayer/Pool)  │
+└─────────────────┴─────────────────┴─────────────────────┘
          │                 │                 │
-┌─────────────────┬─────────────────┬─────────────────┐
-│   RNG System    │  Input Handler  │ Settings Manager│
-└─────────────────┴─────────────────┴─────────────────┘
+┌─────────────────┬─────────────────┬─────────────────────┐
+│   Card Model    │ Touch Gestures  │  PreferenceManager  │
+│ (Data Classes)  │   (View Events) │   (SharedPrefs)     │
+└─────────────────┴─────────────────┴─────────────────────┘
          │                 │                 │
-┌─────────────────┬─────────────────┬─────────────────┐
-│ Data Persistence│  Hand Evaluator │ Statistics      │
-└─────────────────┴─────────────────┴─────────────────┘
+┌─────────────────┬─────────────────┬─────────────────────┐
+│ Room Database   │ Hand Evaluator  │   Statistics DAO    │
+│   (Entities)    │  (Pure Logic)   │   (Room Queries)    │
+└─────────────────┴─────────────────┴─────────────────────┘
 ```
 
 ### 2.4 Security & Fairness
-- **Random Number Generator**: Unity's System.Random with crypto-secure seeding
-- **Card Shuffling**: Fisher-Yates shuffle algorithm
-- **Data Integrity**: Local data validation and checksums
+- **Random Number Generator**: `java.security.SecureRandom` for cryptographically secure randomness
+- **Card Shuffling**: Fisher-Yates shuffle algorithm with SecureRandom implementation
+- **Data Integrity**: Room database constraints and local data validation
+- **Code Obfuscation**: ProGuard/R8 enabled for release builds
 - **No Network Dependencies**: Fully offline gameplay
 
 ## 3. User Interface Design
@@ -240,31 +247,39 @@
 - **No Network Requirements**: Fully offline operation
 
 ### 7.4 Development Tools
-- **Unity Version**: 2024.x LTS
-- **IDE**: Visual Studio or JetBrains Rider
-- **Version Control**: Git repository
-- **Build System**: Unity Cloud Build or local builds
-- **Testing Framework**: Unity Test Framework
+- **IDE**: Android Studio (recommended) or IntelliJ IDEA
+- **Language**: Kotlin 1.9+ with Android Gradle Plugin 8.0+
+- **Build System**: Gradle with Android DSL and version catalogs
+- **Version Control**: Git repository with .gitignore for Android
+- **Testing Framework**: JUnit 5, Espresso (UI), and Robolectric (unit)
+- **Static Analysis**: Ktlint, Detekt for code quality
+- **CI/CD**: GitHub Actions or Jenkins for automated builds
 
 ## 8. Implementation Timeline
 
-### Phase 1: Core Game (4-6 weeks)
-- Basic card dealing and hand evaluation
-- Core UI implementation
-- Betting and payout system
-- Local data persistence
+### Phase 1: Android Foundation & Core Logic (4-6 weeks)
+- Android project setup with Gradle and dependencies
+- Room database schema and DAO implementation
+- Card model classes and hand evaluation logic
+- GameViewModel with LiveData/StateFlow
+- Basic UI layouts (Compose or XML) for game screen
+- SecureRandom implementation for card shuffling
 
-### Phase 2: Polish & Features (3-4 weeks)
-- Visual enhancements and animations
-- Audio implementation
-- Settings and menu systems
-- Help and tutorial content
+### Phase 2: UI/UX & Features (3-4 weeks)
+- Custom card rendering with Canvas API
+- Touch gesture handling and animations
+- MediaPlayer/SoundPool audio integration
+- Settings screen with PreferenceManager
+- Menu navigation with fragments or Compose Navigation
+- Statistics tracking and display
 
-### Phase 3: Testing & Optimization (2-3 weeks)
-- Comprehensive testing and bug fixes
-- Performance optimization
-- Final UI/UX refinements
-- Documentation completion
+### Phase 3: Testing & Android Optimization (2-3 weeks)
+- Unit tests with JUnit and Robolectric
+- UI tests with Espresso
+- Memory profiling and optimization
+- Battery usage optimization
+- ProGuard/R8 configuration for release builds
+- APK generation and testing on multiple devices
 
 **Total Estimated Timeline: 9-13 weeks**
 
