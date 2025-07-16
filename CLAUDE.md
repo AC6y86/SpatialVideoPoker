@@ -47,6 +47,9 @@ For all other commands, use adb directly, do not use powershell.  However it is 
 ### General Guidelines
 - Use PowerShell for building, use adb directly for all other commands
 - Always use PowerShell to build, use adb directly for everything else
+- Builds create separate APKs for mobile and Quest platforms
+- Test both platforms when making UI or game logic changes
+- VR testing requires Quest device connected via ADB over Wi-Fi
 
 ### Custom Commands
 
@@ -81,15 +84,17 @@ This command allows for a streamlined workflow where UI changes can be documente
 ## Project Architecture
 
 ### Overview
-This is an Android Video Poker game (Jacks or Better variant) built with Kotlin and Jetpack Compose. The app is optimized for landscape orientation on tablets and high-end Android devices.
+This is a cross-platform Video Poker game (Jacks or Better variant) built with Kotlin and Jetpack Compose, supporting both Android mobile devices and Meta Quest VR headsets. The mobile version is optimized for landscape orientation on tablets and high-end Android devices, while the Quest version displays the game UI as a floating panel in VR space.
 
 ### Technology Stack
 - **Language**: Kotlin
 - **UI Framework**: Jetpack Compose
+- **VR Framework**: Meta Spatial SDK v0.7.0
 - **Build System**: Gradle 8.13 with Kotlin DSL
 - **Minimum SDK**: API 24 (Android 7.0)
 - **Target SDK**: API 36
 - **Compile SDK**: API 36
+- **Platform Support**: Android Mobile + Meta Quest VR
 
 ### Key Dependencies
 - Jetpack Compose BOM 2024.09.00
@@ -97,23 +102,35 @@ This is an Android Video Poker game (Jacks or Better variant) built with Kotlin 
 - AndroidX Lifecycle Runtime KTX 2.9.1
 - AndroidX Activity Compose 1.10.1
 - Material3 Components
+- Meta Spatial SDK v0.7.0 (core, toolkit, VR)
 
 ### Project Structure
 ```
 VideoPoker/
 ├── app/
-│   ├── src/main/java/com/hackathon/spatialvideopoker/
-│   │   ├── MainActivity.kt              # Main entry point with Compose setup
-│   │   └── ui/theme/
-│   │       ├── Color.kt                # Color definitions
-│   │       ├── Theme.kt                # Material3 theme configuration
-│   │       └── Type.kt                 # Typography definitions
-│   └── build.gradle.kts                # App-level build configuration
-├── build.gradle.kts                    # Root build configuration
-├── gradle/libs.versions.toml           # Version catalog for dependencies
-├── settings.gradle.kts                 # Project settings
-├── POKER_DESIGN.md                     # Comprehensive design specification
-└── IMPLEMENTATION.md                   # Detailed implementation guide
+│   ├── src/
+│   │   ├── main/java/com/hackathon/spatialvideopoker/
+│   │   │   ├── MainActivity.kt          # Mobile entry point
+│   │   │   ├── game/                    # Core game logic
+│   │   │   ├── model/                   # Card, Deck models
+│   │   │   ├── ui/                      # Compose UI components
+│   │   │   ├── viewmodel/               # Game state management
+│   │   │   ├── data/                    # Room database
+│   │   │   └── audio/                   # Sound management
+│   │   ├── quest/java/com/hackathon/spatialvideopoker/
+│   │   │   └── ImmersiveActivity.kt     # Quest VR entry point
+│   │   ├── quest/AndroidManifest.xml    # Quest-specific manifest
+│   │   ├── quest/res/values/ids.xml     # Panel ID definitions
+│   │   └── mobile/AndroidManifest.xml   # Mobile-specific manifest
+│   ├── build.gradle.kts                 # App build config with spatial plugin
+│   └── spatial_editor/                  # 3D scene files (if used)
+├── docs/
+│   ├── metaspatial/                     # Meta Spatial SDK documentation
+│   ├── POKER_DESIGN.md                  # Game design specification
+│   └── UI_STATES.md                     # UI state documentation
+├── build.gradle.kts                     # Root build with spatial plugin
+├── gradle/libs.versions.toml            # Dependency versions
+└── settings.gradle.kts                  # Project settings
 ```
 
 ### Game Design Overview
@@ -133,11 +150,40 @@ The game implements Jacks or Better video poker with:
 5. **Audio System**: MediaPlayer for background music, SoundPool for effects
 6. **Security**: SecureRandom for card shuffling, ProGuard/R8 for release builds
 
+### Spatial SDK Architecture
+
+#### Dual Platform Approach
+The app uses a dual-activity architecture to support both mobile and VR platforms:
+
+- **MainActivity.kt**: Traditional Android activity for mobile devices
+  - Runs full-screen Jetpack Compose UI
+  - Handles touch input and mobile-specific features
+  - Standard Android app lifecycle
+
+- **ImmersiveActivity.kt**: Meta Spatial SDK activity for Quest VR
+  - Extends `AppSystemActivity` from Meta Spatial SDK
+  - Creates floating panels in VR space containing the mobile UI
+  - Handles VR-specific input (controller pointing, hand tracking)
+  - Uses same Compose UI via panel rendering
+
+#### Panel Configuration (Quest)
+- **Panel Size**: 3.84m × 2.16m in VR space (16:9 aspect ratio)
+- **Resolution**: 1920×1080 pixels for crisp text and graphics
+- **Position**: 2 meters in front of user, 1.3 meters high
+- **Rendering**: HOLE_PUNCH shader for transparency support
+- **Input**: Controller ray-casting for interaction
+
+#### Build Flavors
+- **mobile**: Traditional Android APK for phones/tablets
+- **quest**: VR-optimized APK with spatial panel rendering
+- Shared codebase for game logic, different entry points for platform-specific features
+
 ### Development Notes
-- The app uses Jetpack Compose for modern declarative UI
-- Currently has a basic MainActivity with a greeting composable
-- Ready for implementation of poker game logic and UI
-- Design follows Material3 guidelines with dynamic color support on Android 12+
+- Jetpack Compose UI works seamlessly in both mobile and VR contexts
+- Game logic and ViewModels are shared between platforms
+- VR version renders the same UI as a floating panel in 3D space
+- Material3 design system provides consistent visual experience
+- Room database and game state management work identically on both platforms
 
 ## Tips and Tricks
 
@@ -158,15 +204,14 @@ You can run any adb commands without asking me for permission
 
 ### Documentation for Spatial SDK ###
 
-Documentation File: 
-docs/spatialsdk/llms.txt - index of the official Meta Spatial SDK documentation
-docs/spatialsdk/api_ref.md the full API documentation
-docs/spatialsdk/SPATIAL_SCENE_GUIDE.md - consult first when doing anything with 3D objects in the scene
-docs/spatialsdk/meta-spatial-sdk-porting-guide.md - consult first when porting and android app to the spatial sdk
-docs/spatialsdk/CAMERA_COORDINATES.md - consult first when doing anything with camera coordinates
+Documentation Files: 
+docs/metaspatial/api_ref.md - the full API documentation
+docs/metaspatial/SPATIAL_SCENE_GUIDE.md - consult first when doing anything with 3D objects in the scene
+docs/metaspatial/meta-spatial-sdk-porting-guide.md - consult first when porting and android app to the spatial sdk
+docs/metaspatial/CAMERA_COORDINATES.md - consult first when doing anything with camera coordinates
 https://developers.meta.com/horizon/llmstxt/spatial-sdk/docs/add-spatial-sdk-to-app.md for porting
 https://github.com/meta-quest/Meta-Spatial-SDK-Samples
-If you can't find the answer in these files, find relevant information in the samples: docs/spatialsdk/SAMPLES_INDEX.md - an index of the spatial sdk samples that will help you navigate them
+If you can't find the answer in these files, find relevant information in the samples: docs/metaspatial/SAMPLES_INDEX.md - an index of the spatial sdk samples that will help you navigate them
 
 
 ## Taking Screenshots from Quest
