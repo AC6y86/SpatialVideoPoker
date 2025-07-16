@@ -106,8 +106,8 @@ spatial {
     scenes {
         exportItems {
             item {
-                projectPath.set(file("spatial_editor/Main.metaspatial"))
-                outputPath.set(file("src/quest/assets/scenes"))
+                projectPath.set(file("scenes/Main.metaspatial"))
+                outputPath.set(file("src/main/assets/scenes"))
             }
         }
     }
