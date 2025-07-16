@@ -135,6 +135,42 @@ Put all temporary files on our pc, including screenshots, in {working directory}
 - Use ADB command: `adb shell screencap -p /sdcard/screenshot.png`
 - Pull screenshot to local machine: `adb pull /sdcard/screenshot.png`
 
-# Whitelist ##
+## Whitelist ##
 
 You can run any adb commands without asking me for permission
+
+
+## Meta Quest ##
+
+### Documentation for Spatial SDK ###
+
+Documentation File: 
+docs/spatialsdk/llms.txt - index of the official Meta Spatial SDK documentation
+docs/spatialsdk/api_ref.md the full API documentation
+docs/spatialsdk/SPATIAL_SCENE_GUIDE.md - consult first when doing anything with 3D objects in the scene
+docs/spatialsdk/meta-spatial-sdk-porting-guide.md - consult first when porting and android app to the spatial sdk
+docs/spatialsdk/CAMERA_COORDINATES.md - consult first when doing anything with camera coordinates
+https://developers.meta.com/horizon/llmstxt/spatial-sdk/docs/add-spatial-sdk-to-app.md for porting
+https://github.com/meta-quest/Meta-Spatial-SDK-Samples
+If you can't find the answer in these files, find relevant information in the samples: docs/spatialsdk/SAMPLES_INDEX.md - an index of the spatial sdk samples that will help you navigate them
+
+
+## Taking Screenshots from Quest
+
+```bash
+# Multi-step approach (works without permission prompts)
+# Step 1: Trigger screenshot
+adb shell am startservice -n com.oculus.metacam/.capture.CaptureService -a TAKE_SCREENSHOT --ei screenshot_height 1024 --ei screenshot_width 1024 -e capture_entrypoint ODH
+
+# Step 2: Wait for processing
+sleep 2
+
+# Step 3: Get latest screenshot filename
+adb shell ls -t /sdcard/Oculus/Screenshots/*.jpg | head -1
+
+# Step 4: Pull the screenshot
+adb pull "/sdcard/Oculus/Screenshots/[filename].jpg" ./screenshot.jpg
+
+# One-liner (do not use, will require permission prompts)
+adb shell am startservice -n com.oculus.metacam/.capture.CaptureService -a TAKE_SCREENSHOT --ei screenshot_height 1024 --ei screenshot_width 1024 -e capture_entrypoint ODH && sleep 2 && LATEST=$(adb shell ls -t /sdcard/Oculus/Screenshots/*.jpg | head -1 | tr -d '\r') && adb pull "$LATEST" ./screenshot.jpg
+```
