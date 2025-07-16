@@ -3,9 +3,7 @@ package com.hackathon.spatialvideopoker.ui.screen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -20,6 +18,14 @@ fun GameScreen(
     viewModel: GameViewModel = viewModel()
 ) {
     val gameState by viewModel.gameState.collectAsState()
+    var showWinAnimation by remember { mutableStateOf(false) }
+    
+    // Trigger win animation when payout phase starts with a win
+    LaunchedEffect(gameState.gamePhase, gameState.lastWinAmount) {
+        if (gameState.gamePhase == GameStateMachine.GamePhase.PAYOUT && gameState.lastWinAmount > 0) {
+            showWinAnimation = true
+        }
+    }
     
     Box(
         modifier = Modifier
@@ -82,6 +88,17 @@ fun GameScreen(
                 onDeal = { viewModel.deal() },
                 onDraw = { viewModel.draw() },
                 modifier = Modifier.fillMaxWidth()
+            )
+        }
+        
+        // Winning animation overlay
+        if (showWinAnimation) {
+            WinningAnimation(
+                handRank = gameState.lastHandRank,
+                payout = gameState.lastWinAmount,
+                onAnimationComplete = {
+                    showWinAnimation = false
+                }
             )
         }
     }

@@ -18,16 +18,16 @@ import kotlinx.coroutines.delay
 
 class GameViewModel(application: Application) : AndroidViewModel(application) {
     
-    private val database = VideoPokerDatabase.getDatabase(application)
-    private val gameStateDao: GameStateDao = database.gameStateDao()
-    private val statisticsDao: StatisticsDao = database.statisticsDao()
+    private val database by lazy { VideoPokerDatabase.getDatabase(application) }
+    private val gameStateDao: GameStateDao by lazy { database.gameStateDao() }
+    private val statisticsDao: StatisticsDao by lazy { database.statisticsDao() }
     
     private val deck = Deck()
     private val handEvaluator = HandEvaluator()
     private val payoutCalculator = PayoutCalculator()
     private val bettingManager = BettingManager()
     private val gameStateMachine = GameStateMachine()
-    private val creditManager = CreditManager(gameStateDao)
+    private val creditManager by lazy { CreditManager(gameStateDao) }
     
     private val _gameState = MutableStateFlow(GameUiState())
     val gameState: StateFlow<GameUiState> = _gameState.asStateFlow()
@@ -46,15 +46,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     )
     
     init {
-        viewModelScope.launch {
-            creditManager.loadCredits()
-            updateCreditsInState()
-            
-            // Observe credits changes
-            creditManager.observeCredits().collect { credits ->
-                _gameState.update { it.copy(credits = credits) }
-            }
-        }
+        // Start with default credits, load from database later
+        _gameState.update { it.copy(credits = 1000) }
     }
     
     fun deal() {

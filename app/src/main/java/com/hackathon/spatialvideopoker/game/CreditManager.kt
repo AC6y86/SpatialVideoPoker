@@ -15,8 +15,12 @@ class CreditManager(private val gameStateDao: GameStateDao) {
     private var credits = DEFAULT_CREDITS
     
     suspend fun loadCredits() {
-        val gameState = gameStateDao.getGameState()
-        credits = gameState?.credits ?: DEFAULT_CREDITS
+        try {
+            val gameState = gameStateDao.getGameState()
+            credits = gameState?.credits ?: DEFAULT_CREDITS
+        } catch (e: Exception) {
+            credits = DEFAULT_CREDITS
+        }
     }
     
     fun observeCredits(): Flow<Int> {

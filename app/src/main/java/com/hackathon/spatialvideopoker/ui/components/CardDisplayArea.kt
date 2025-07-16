@@ -29,11 +29,12 @@ fun CardDisplayArea(
             if (cards.isEmpty()) {
                 // Show placeholder cards when no cards are dealt
                 repeat(5) { index ->
-                    CardView(
+                    SimpleCardView(
                         card = null,
                         isHeld = false,
                         onClick = { },
                         enabled = false,
+                        animationDelay = 0,
                         modifier = Modifier
                             .weight(1f)
                             .aspectRatio(0.7f) // Standard playing card ratio
@@ -42,11 +43,12 @@ fun CardDisplayArea(
             } else {
                 // Show dealt cards
                 cards.forEachIndexed { index, card ->
-                    CardView(
+                    SimpleCardView(
                         card = card,
                         isHeld = index in heldCardIndices,
                         onClick = { if (enabled) onCardClick(index) },
                         enabled = enabled,
+                        animationDelay = index * 100, // Staggered animation
                         modifier = Modifier
                             .weight(1f)
                             .aspectRatio(0.7f)
