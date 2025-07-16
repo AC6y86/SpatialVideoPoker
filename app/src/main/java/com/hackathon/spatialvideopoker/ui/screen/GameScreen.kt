@@ -90,7 +90,7 @@ fun GameScreen(
                 )
             }
             
-            // Card display area with win display
+            // Card display area with win display overlay
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -109,21 +109,16 @@ fun GameScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
                 
-                
-            }
-            
-            // Win amount display between cards and credits - always takes same space
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
-                    .height(40.dp), // Fixed height to prevent layout shifts
-                contentAlignment = Alignment.CenterStart
-            ) {
-                if (gameState.lastWinAmount > 0) {
+                // Win amount display positioned absolutely at bottom left of card area
+                // Always present to prevent layout shifts
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 16.dp, bottom = 8.dp) // Moved down by reducing bottom padding
+                ) {
                     WinAmountDisplay(
                         amount = gameState.lastWinAmount,
-                        showWin = true,
+                        showWin = gameState.lastWinAmount > 0,
                         modifier = Modifier
                     )
                 }
