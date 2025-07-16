@@ -19,8 +19,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.sp
 import com.hackathon.spatialvideopoker.model.Card
+import com.hackathon.spatialvideopoker.ui.theme.*
 import kotlinx.coroutines.delay
 
 @Composable
@@ -31,17 +33,25 @@ fun CardView(
     enabled: Boolean,
     modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        // Card
         Card(
             modifier = Modifier
-                .fillMaxSize()
+                .weight(1f)
+                .fillMaxWidth()
                 .clickable(enabled = enabled) { onClick() },
-            shape = RoundedCornerShape(8.dp),
+            shape = RoundedCornerShape(8.dp), // Slightly more rounded
             colors = CardDefaults.cardColors(
-                containerColor = if (card != null) Color.White else Color(0xFF1E5128)
+                containerColor = if (card != null) CardWhite else Color(0xFF000066) // Dark blue for empty cards
             ),
-            border = if (isHeld) BorderStroke(4.dp, Color.Yellow) else null,
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 8.dp // More prominent shadow
+            ),
+            border = BorderStroke(1.dp, Color.Black) // Add black border
         ) {
             if (card != null) {
                 // Card face
@@ -56,15 +66,17 @@ fun CardView(
                         // Rank
                         Text(
                             text = card.rank.symbol,
-                            fontSize = 48.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontSize = 36.sp, // Smaller font
+                            fontWeight = FontWeight.ExtraBold,
+                            fontFamily = FontFamily.SansSerif,
                             color = if (card.suit.color == Card.CardColor.RED) Color.Red else Color.Black
                         )
                         
                         // Suit
                         Text(
                             text = card.suit.symbol,
-                            fontSize = 36.sp,
+                            fontSize = 32.sp, // Smaller font
+                            fontFamily = FontFamily.SansSerif,
                             color = if (card.suit.color == Card.CardColor.RED) Color.Red else Color.Black
                         )
                     }
@@ -91,41 +103,44 @@ fun CardView(
                     )
                 }
             } else {
-                // Card back
+                // Card back - dark blue with pattern
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color(0xFF2E7D32)),
-                    contentAlignment = Alignment.Center
+                        .background(Color(0xFF000066))
                 ) {
+                    // Add simple pattern or logo
                     Text(
                         text = "VIDEO\nPOKER",
-                        color = Color.Gold,
-                        fontSize = 20.sp,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0000CC),
+                        fontFamily = FontFamily.SansSerif,
                         textAlign = TextAlign.Center,
-                        lineHeight = 24.sp
+                        modifier = Modifier.align(Alignment.Center)
                     )
                 }
             }
         }
         
-        // HELD indicator
+        // HELD indicator below card
         if (isHeld && card != null) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .offset(y = (-12).dp)
-                    .background(Color.Yellow, RoundedCornerShape(4.dp))
-                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .background(CasinoRed, RoundedCornerShape(2.dp))
+                    .padding(horizontal = 12.dp, vertical = 2.dp)
             ) {
                 Text(
                     text = "HELD",
-                    color = Color.Black,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace
                 )
             }
+        } else {
+            // Empty space to maintain layout
+            Spacer(modifier = Modifier.height(20.dp))
         }
     }
 }

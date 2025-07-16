@@ -21,20 +21,19 @@ fun CardDisplayArea(
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+                .fillMaxWidth(0.85f) // Make cards take up slightly more horizontal space
+                .fillMaxHeight(), // Fill available height
+            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally), // Adjust spacing between cards
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (cards.isEmpty()) {
                 // Show placeholder cards when no cards are dealt
                 repeat(5) { index ->
-                    SimpleCardView(
+                    CardView(
                         card = null,
                         isHeld = false,
                         onClick = { },
                         enabled = false,
-                        animationDelay = 0,
                         modifier = Modifier
                             .weight(1f)
                             .aspectRatio(0.7f) // Standard playing card ratio
@@ -43,12 +42,11 @@ fun CardDisplayArea(
             } else {
                 // Show dealt cards
                 cards.forEachIndexed { index, card ->
-                    SimpleCardView(
+                    CardView(
                         card = card,
                         isHeld = index in heldCardIndices,
                         onClick = { if (enabled) onCardClick(index) },
                         enabled = enabled,
-                        animationDelay = index * 100, // Staggered animation
                         modifier = Modifier
                             .weight(1f)
                             .aspectRatio(0.7f)

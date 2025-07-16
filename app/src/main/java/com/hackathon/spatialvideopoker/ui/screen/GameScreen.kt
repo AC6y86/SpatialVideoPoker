@@ -1,16 +1,25 @@
 package com.hackathon.spatialvideopoker.ui.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hackathon.spatialvideopoker.game.GameStateMachine
 import com.hackathon.spatialvideopoker.ui.components.*
+import com.hackathon.spatialvideopoker.ui.theme.*
 import com.hackathon.spatialvideopoker.viewmodel.GameViewModel
 
 @Composable
@@ -30,31 +39,39 @@ fun GameScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0B5D1E)) // Casino green background
+            .background(CasinoBlue)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(8.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Top information bar
-            TopInfoBar(
-                credits = gameState.credits,
+            // Integrated Paytable (always visible at top)
+            IntegratedPaytable(
                 currentBet = gameState.currentBet,
-                lastWin = gameState.lastWinAmount,
-                onPaytableClick = { viewModel.togglePaytable() },
-                onSettingsClick = { viewModel.toggleSettings() },
+                lastWinHandRank = if (gameState.gamePhase == GameStateMachine.GamePhase.PAYOUT) gameState.lastHandRank else null,
+                isWinning = gameState.gamePhase == GameStateMachine.GamePhase.PAYOUT && gameState.lastWinAmount > 0,
                 modifier = Modifier.fillMaxWidth()
             )
             
-            // Game message
-            GameMessage(
-                message = gameState.message,
+            // Game message (single line)
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            )
+                    .padding(vertical = 4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = gameState.message,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = PaytableText,
+                    fontFamily = FontFamily.SansSerif,
+                    textAlign = TextAlign.Center,
+                    letterSpacing = 0.5.sp
+                )
+            }
             
             // Card display area
             CardDisplayArea(
@@ -67,30 +84,36 @@ fun GameScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
+                    .padding(vertical = 8.dp)
             )
             
-            // Last hand result (if any)
-            gameState.lastHandRank?.let { handRank ->
-                HandResultDisplay(
-                    handRank = handRank,
-                    payout = gameState.lastWinAmount,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
+            // Combined credit display and controls
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                // Credit Panel
+                CreditPanel(
+                    credits = gameState.credits,
+                    bet = gameState.currentBet,
+                    win = gameState.lastWinAmount,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                // Betting controls
+                BettingControls(
+                    currentBet = gameState.currentBet,
+                    credits = gameState.credits,
+                    gamePhase = gameState.gamePhase,
+                    onBetChange = { bet -> viewModel.setBet(bet) },
+                    onMaxBet = { viewModel.maxBet() },
+                    onDeal = { viewModel.deal() },
+                    onDraw = { viewModel.draw() },
+                    onPaytableClick = { viewModel.togglePaytable() },
+                    onSettingsClick = { viewModel.toggleSettings() },
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
-            
-            // Betting controls
-            BettingControls(
-                currentBet = gameState.currentBet,
-                credits = gameState.credits,
-                gamePhase = gameState.gamePhase,
-                onBetChange = { bet -> viewModel.setBet(bet) },
-                onMaxBet = { viewModel.maxBet() },
-                onDeal = { viewModel.deal() },
-                onDraw = { viewModel.draw() },
-                modifier = Modifier.fillMaxWidth()
-            )
         }
         
         // Winning animation overlay

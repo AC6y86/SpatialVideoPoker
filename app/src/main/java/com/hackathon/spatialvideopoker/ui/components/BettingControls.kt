@@ -1,18 +1,26 @@
 package com.hackathon.spatialvideopoker.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hackathon.spatialvideopoker.game.GameStateMachine
+import com.hackathon.spatialvideopoker.ui.theme.*
 
 @Composable
 fun BettingControls(
@@ -23,55 +31,61 @@ fun BettingControls(
     onMaxBet: () -> Unit,
     onDeal: () -> Unit,
     onDraw: () -> Unit,
+    onPaytableClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isBettingPhase = gamePhase == GameStateMachine.GamePhase.BETTING
     val isHoldingPhase = gamePhase == GameStateMachine.GamePhase.HOLDING
     
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        // Bet buttons
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Bet 1-5 buttons
-            for (bet in 1..5) {
-                BetButton(
-                    bet = bet,
-                    isSelected = currentBet == bet,
-                    enabled = isBettingPhase && credits >= bet,
-                    onClick = { onBetChange(bet) },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            
-            // Max Bet button
-            Button(
-                onClick = onMaxBet,
-                enabled = isBettingPhase && credits >= 5,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFF6B6B),
-                    disabledContainerColor = Color.Gray
-                ),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier
-                    .weight(1.5f)
-                    .height(56.dp)
-            ) {
-                Text(
-                    text = "MAX\nBET",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 16.sp
-                )
-            }
-        }
+        // BET ONE button
+        CasinoButton(
+            text = "BET ONE",
+            enabled = isBettingPhase,
+            onClick = {
+                val nextBet = if (currentBet >= 5) 1 else currentBet + 1
+                onBetChange(nextBet)
+            },
+            color = CasinoYellow,
+            textColor = Color.Black,
+            modifier = Modifier.weight(1f),
+            height = 40.dp
+        )
         
-        // Deal/Draw button
-        Button(
+        // SEE PAYS button
+        CasinoButton(
+            text = "SEE/\\nPAYS",
+            enabled = true,
+            onClick = onPaytableClick,
+            color = Color.Gray,
+            textColor = Color.Black,
+            modifier = Modifier.weight(1f),
+            height = 40.dp
+        )
+        
+        // MAX BET button
+        CasinoButton(
+            text = "MAX BET",
+            enabled = isBettingPhase,
+            onClick = onMaxBet,
+            color = CasinoYellow,
+            textColor = Color.Black,
+            modifier = Modifier.weight(1f),
+            height = 40.dp
+        )
+        
+        // DEAL/DRAW button
+        CasinoButton(
+            text = when (gamePhase) {
+                GameStateMachine.GamePhase.BETTING -> "DEAL"
+                GameStateMachine.GamePhase.HOLDING -> "DRAW"
+                else -> "..."
+            },
+            enabled = (isBettingPhase && credits >= currentBet) || isHoldingPhase,
             onClick = {
                 when (gamePhase) {
                     GameStateMachine.GamePhase.BETTING -> onDeal()
@@ -79,61 +93,49 @@ fun BettingControls(
                     else -> { }
                 }
             },
-            enabled = (isBettingPhase && credits >= currentBet) || isHoldingPhase,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF4ECDC4),
-                disabledContainerColor = Color.Gray
-            ),
-            shape = RoundedCornerShape(8.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(64.dp)
-        ) {
-            Text(
-                text = when (gamePhase) {
-                    GameStateMachine.GamePhase.BETTING -> "DEAL"
-                    GameStateMachine.GamePhase.HOLDING -> "DRAW"
-                    else -> "..."
-                },
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
+            color = if (isHoldingPhase) Color.Red else CasinoYellow,
+            textColor = if (isHoldingPhase) Color.White else Color.Black,
+            modifier = Modifier.weight(1f),
+            height = 40.dp
+        )
     }
 }
 
 @Composable
-private fun BetButton(
-    bet: Int,
-    isSelected: Boolean,
+private fun CasinoButton(
+    text: String,
     enabled: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    color: Color,
+    textColor: Color = Color.White,
+    modifier: Modifier = Modifier,
+    height: Dp = 48.dp
 ) {
-    Button(
-        onClick = onClick,
-        enabled = enabled,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (isSelected) Color(0xFFFFD93D) else Color(0xFF6C757D),
-            disabledContainerColor = Color.Gray
-        ),
-        shape = RoundedCornerShape(8.dp),
-        modifier = modifier.height(56.dp)
+    Box(
+        modifier = modifier
+            .height(height)
+            .background(
+                color = if (enabled) color else Color.DarkGray,
+                shape = RoundedCornerShape(4.dp)
+            )
+            .border(
+                width = 2.dp,
+                color = if (enabled) Color.Black else Color.Black.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(4.dp)
+            )
+            .clickable(enabled = enabled) {
+                onClick()
+            },
+        contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "BET",
-                fontSize = 12.sp,
-                color = if (isSelected) Color.Black else Color.White
-            )
-            Text(
-                text = bet.toString(),
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (isSelected) Color.Black else Color.White
-            )
-        }
+        Text(
+            text = text,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = if (enabled) textColor else Color.Gray,
+            fontFamily = FontFamily.SansSerif,
+            lineHeight = 12.sp,
+            textAlign = TextAlign.Center
+        )
     }
 }
