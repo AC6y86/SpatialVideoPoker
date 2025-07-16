@@ -24,6 +24,7 @@ fun CardDisplayArea(
     heldCardIndices: Set<Int>,
     onCardClick: (Int) -> Unit,
     enabled: Boolean,
+    showDealBanner: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -66,8 +67,8 @@ fun CardDisplayArea(
             }
         }
         
-        // Show banner overlay when no cards are dealt
-        if (cards.isEmpty()) {
+        // Show banner overlay when no cards are dealt OR when showDealBanner is true
+        if (cards.isEmpty() || showDealBanner) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.7f)
@@ -76,7 +77,8 @@ fun CardDisplayArea(
                         RoundedCornerShape(8.dp)
                     )
                     .border(3.dp, Color(0xFFFFFF00), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 24.dp, vertical = 12.dp),
+                    .padding(horizontal = 24.dp, vertical = 12.dp)
+                    .zIndex(10f), // Ensure banner is above cards
                 contentAlignment = Alignment.Center
             ) {
                 Text(

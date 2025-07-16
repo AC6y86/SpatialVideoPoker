@@ -8,6 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -54,41 +55,73 @@ fun GameScreen(
                 modifier = Modifier.fillMaxWidth()
             )
             
-            // Game message - show as banner when in betting phase
-            if (gameState.gamePhase == GameStateMachine.GamePhase.BETTING && gameState.dealtCards.isEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-            } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = gameState.message,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = PaytableText,
-                        fontFamily = FontFamily.SansSerif,
-                        textAlign = TextAlign.Center,
-                        letterSpacing = 0.5.sp
-                    )
-                }
+            // Banner - single line message showing current game state
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = when {
+                        gameState.gamePhase == GameStateMachine.GamePhase.DEALING -> "Dealing..."
+                        gameState.gamePhase == GameStateMachine.GamePhase.HOLDING -> "Select cards to HOLD, then press DRAW"
+                        gameState.gamePhase == GameStateMachine.GamePhase.DRAWING -> "Drawing..."
+                        gameState.gamePhase == GameStateMachine.GamePhase.EVALUATING -> "Evaluating..."
+                        gameState.gamePhase == GameStateMachine.GamePhase.PAYOUT && gameState.lastWinAmount > 0 -> 
+                            gameState.lastHandRank!!.displayName.uppercase()
+                        gameState.gamePhase == GameStateMachine.GamePhase.PAYOUT && gameState.lastWinAmount == 0 -> "LOSE"
+                        gameState.gamePhase == GameStateMachine.GamePhase.BETTING && gameState.lastHandRank != null -> 
+                            if (gameState.lastWinAmount > 0) gameState.lastHandRank!!.displayName.uppercase() else "LOSE"
+                        else -> "" // No banner during initial betting phase
+                    },
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = PaytableText,
+                    fontFamily = FontFamily.SansSerif,
+                    textAlign = TextAlign.Center,
+                    letterSpacing = 0.5.sp
+                )
             }
             
-            // Card display area
-            CardDisplayArea(
-                cards = gameState.dealtCards,
-                heldCardIndices = gameState.heldCardIndices,
-                onCardClick = { index ->
-                    viewModel.toggleHold(index)
-                },
-                enabled = gameState.gamePhase == GameStateMachine.GamePhase.HOLDING,
+            // Card display area with win display
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
                     .padding(vertical = 8.dp)
-            )
+            ) {
+                // Cards - always in the same position
+                CardDisplayArea(
+                    cards = gameState.dealtCards,
+                    heldCardIndices = gameState.heldCardIndices,
+                    onCardClick = { index ->
+                        viewModel.toggleHold(index)
+                    },
+                    enabled = gameState.gamePhase == GameStateMachine.GamePhase.HOLDING,
+                    showDealBanner = gameState.gamePhase == GameStateMachine.GamePhase.BETTING && gameState.dealtCards.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                
+            }
+            
+            // Win amount display between cards and credits - always takes same space
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
+                    .height(40.dp), // Fixed height to prevent layout shifts
+                contentAlignment = Alignment.CenterStart
+            ) {
+                if (gameState.lastWinAmount > 0) {
+                    WinAmountDisplay(
+                        amount = gameState.lastWinAmount,
+                        showWin = true,
+                        modifier = Modifier
+                    )
+                }
+            }
             
             // Combined credit display and controls
             Column(
@@ -121,15 +154,27 @@ fun GameScreen(
             }
         }
         
-        // Winning animation overlay
-        if (showWinAnimation) {
-            WinningAnimation(
-                handRank = gameState.lastHandRank,
-                payout = gameState.lastWinAmount,
-                onAnimationComplete = {
-                    showWinAnimation = false
-                }
-            )
+        // Win animation trigger for winning hands
+        LaunchedEffect(gameState.lastWinAmount, gameState.gamePhase) {
+            if (gameState.lastWinAmount > 0 && gameState.gamePhase == GameStateMachine.GamePhase.PAYOUT) {
+                showWinAnimation = true
+                // Wait for counter animation to complete (amount * 50ms + 1 second)  
+                val counterDuration = (gameState.lastWinAmount - 1) * 50L
+                delay(counterDuration + 1000L) // Counter duration + 1 second
+                showWinAnimation = false
+                // Reset game state to show "Click Deal to start" banner
+                viewModel.resetForNextHand()
+            }
+        }
+        
+        // Reset state after losing hands
+        LaunchedEffect(gameState.gamePhase, gameState.lastWinAmount) {
+            if (gameState.gamePhase == GameStateMachine.GamePhase.BETTING && 
+                gameState.lastWinAmount == 0 && 
+                gameState.dealtCards.isNotEmpty()) {
+                // This is a losing hand that just finished, reset to show banner
+                viewModel.resetForNextHand()
+            }
         }
         
         // Paytable overlay

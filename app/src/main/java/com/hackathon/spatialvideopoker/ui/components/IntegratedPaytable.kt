@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Divider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -71,14 +70,14 @@ fun IntegratedPaytable(
                     }
                     
                     // Yellow divider after hand name
-                    Divider(
+                    Box(
                         modifier = Modifier
                             .fillMaxHeight()
-                            .width(1.dp),
-                        color = Color.Yellow
+                            .width(2.dp)
+                            .background(Color.Yellow)
                     )
                     
-                    // Payouts in columns
+                    // Payouts in columns with yellow dividers between each
                     payoutAmounts.forEachIndexed { index, payout ->
                         val coinCount = index + 1
                         val isCurrentBetColumn = coinCount == currentBet
@@ -108,11 +107,11 @@ fun IntegratedPaytable(
                         
                         // Yellow divider after each column (except the last one)
                         if (index < payoutAmounts.size - 1) {
-                            Divider(
+                            Box(
                                 modifier = Modifier
                                     .fillMaxHeight()
-                                    .width(1.dp),
-                                color = Color.Yellow
+                                    .width(2.dp)
+                                    .background(Color.Yellow)
                             )
                         }
                     }

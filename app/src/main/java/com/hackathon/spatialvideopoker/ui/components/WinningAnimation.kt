@@ -23,6 +23,71 @@ import kotlinx.coroutines.delay
 import kotlin.random.Random
 
 @Composable
+fun WinningHandName(
+    handRank: HandEvaluator.HandRank?,
+    showWin: Boolean,
+    modifier: Modifier = Modifier
+) {
+    AnimatedVisibility(
+        visible = showWin && handRank != null,
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = modifier
+    ) {
+        Text(
+            text = handRank?.displayName?.uppercase() ?: "",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Yellow,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+@Composable
+fun WinAmountDisplay(
+    amount: Int,
+    showWin: Boolean,
+    modifier: Modifier = Modifier
+) {
+    var displayAmount by remember { mutableStateOf(1) }
+    var showDisplay by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(amount) {
+        if (amount > 0) {
+            showDisplay = true
+            displayAmount = 1
+            val steps = amount - 1
+            
+            if (steps > 0) {
+                for (i in 1..steps) {
+                    delay(50L) // 20 per second
+                    displayAmount = i + 1
+                }
+            }
+        } else {
+            showDisplay = false
+        }
+    }
+    
+    AnimatedVisibility(
+        visible = showDisplay,
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = modifier
+    ) {
+        Text(
+            text = "WIN $displayAmount",
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Yellow
+        )
+    }
+}
+
+// Legacy function for backwards compatibility - now just triggers the display
+@Composable
 fun WinningAnimation(
     handRank: HandEvaluator.HandRank?,
     payout: Int,
@@ -39,62 +104,7 @@ fun WinningAnimation(
         }
     }
     
-    AnimatedVisibility(
-        visible = showAnimation,
-        enter = fadeIn() + scaleIn(),
-        exit = fadeOut() + scaleOut()
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            // Background overlay
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.7f))
-            )
-            
-            // Particle effects for big wins
-            if (handRank != null && handRank.ordinal >= HandEvaluator.HandRank.FULL_HOUSE.ordinal) {
-                ParticleEffects()
-            }
-            
-            // Main win display
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Hand name with glow effect
-                Box {
-                    // Glow background
-                    Text(
-                        text = handRank?.displayName?.uppercase() ?: "",
-                        fontSize = 48.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Yellow,
-                        modifier = Modifier
-                            .alpha(0.5f)
-                            .scale(1.1f)
-                    )
-                    
-                    // Main text
-                    AnimatedText(
-                        text = handRank?.displayName?.uppercase() ?: "",
-                        fontSize = 48.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Yellow
-                    )
-                }
-                
-                // Payout amount
-                PayoutCountAnimation(
-                    targetPayout = payout,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
-        }
-    }
+    // This component is now deprecated - win display is handled directly in GameScreen
 }
 
 @Composable

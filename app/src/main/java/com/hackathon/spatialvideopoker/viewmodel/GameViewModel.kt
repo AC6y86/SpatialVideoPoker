@@ -318,6 +318,18 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _gameState.update { it.copy(gameSettings = newSettings) }
     }
     
+    fun resetForNextHand() {
+        gameStateMachine.reset()
+        _gameState.update { 
+            it.copy(
+                gamePhase = GameStateMachine.GamePhase.BETTING,
+                heldCardIndices = emptySet(),
+                message = "Click DEAL to start"
+                // Keep dealtCards visible to show winning hand
+            )
+        }
+    }
+    
     override fun onCleared() {
         super.onCleared()
         soundManager.release()

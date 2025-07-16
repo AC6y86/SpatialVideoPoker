@@ -42,11 +42,6 @@ powershell.exe -Command "Set-Item -Path 'Env:JAVA_HOME' -Value 'C:\Program Files
 For all other commands, use adb directly, do not use powershell.  However it is the Windows adb, so you need to give it Windows paths.
 
 
-## Whitelist ##
-
-You can run any adb commands without asking me for permission.  
-
-
 ## Development Workflow
 
 ### General Guidelines
@@ -116,8 +111,14 @@ The game implements Jacks or Better video poker with:
 
 ## Tips and Tricks
 
+Put all temporary files on our pc, including screenshots, in {working directory}/tmp/
+
 ### How to Take Screenshots
 - Use Android Studio's built-in screenshot tool
 - Press `Shift + F12` in Android Studio Emulator
 - Use ADB command: `adb shell screencap -p /sdcard/screenshot.png`
 - Pull screenshot to local machine: `adb pull /sdcard/screenshot.png`
+
+# Whitelist ##
+
+You can run any adb commands without asking me for permission
