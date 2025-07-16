@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("kotlin-kapt")
+    id("com.meta.spatial.plugin")
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -17,6 +19,12 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    flavorDimensions += "device"
+    productFlavors {
+        create("mobile") { dimension = "device" }
+        create("quest") { dimension = "device" }
     }
 
     buildTypes {
@@ -37,6 +45,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -82,4 +91,24 @@ dependencies {
     
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    
+    // Meta Spatial SDK
+    val spatialVersion = "0.7.0"
+    implementation("com.meta.spatial:meta-spatial-sdk:$spatialVersion")
+    implementation("com.meta.spatial:meta-spatial-sdk-toolkit:$spatialVersion")
+    implementation("com.meta.spatial:meta-spatial-sdk-vr:$spatialVersion")
+    ksp("com.meta.spatial.plugin:com.meta.spatial.plugin.gradle.plugin:$spatialVersion")
+}
+
+// Spatial SDK configuration
+spatial {
+    allowUsageDataCollection = true
+    scenes {
+        exportItems {
+            item {
+                projectPath.set(file("spatial_editor/Main.metaspatial"))
+                outputPath.set(file("src/quest/assets/scenes"))
+            }
+        }
+    }
 }

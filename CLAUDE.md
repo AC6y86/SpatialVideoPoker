@@ -50,6 +50,20 @@ For all other commands, use adb directly, do not use powershell.  However it is 
 
 ### Custom Commands
 
+#### Run Quest
+When the user says "Run Quest", build, install, and launch the Quest VR version:
+
+```bash
+powershell.exe -Command "Set-Item -Path 'Env:JAVA_HOME' -Value 'C:\Program Files\Android\Android Studio\jbr'; cd 'C:\Users\joepaley\AndroidStudioProjects\VideoPoker'; .\gradlew.bat assembleQuestDebug" && adb -s 192.168.1.194:5555 install -r "C:\Users\joepaley\AndroidStudioProjects\VideoPoker\app\build\outputs\apk\quest\debug\app-quest-debug.apk" && adb -s 192.168.1.194:5555 shell am start -n com.hackathon.spatialvideopoker/.ImmersiveActivity
+```
+
+#### Run Phone  
+When the user says "Run Phone", build, install, and launch the mobile version on emulator:
+
+```bash
+powershell.exe -Command "Set-Item -Path 'Env:JAVA_HOME' -Value 'C:\Program Files\Android\Android Studio\jbr'; cd 'C:\Users\joepaley\AndroidStudioProjects\VideoPoker'; .\gradlew.bat assembleMobileDebug" && adb -s emulator-5554 install -r "C:\Users\joepaley\AndroidStudioProjects\VideoPoker\app\build\outputs\apk\mobile\debug\app-mobile-debug.apk" && adb -s emulator-5554 shell am start -n com.hackathon.spatialvideopoker/.MainActivity
+```
+
 #### Sync UI Changes
 When the user says "sync UI changes", perform the following workflow:
 

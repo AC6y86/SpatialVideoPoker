@@ -3,4 +3,6 @@ plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.kotlin.compose) apply false
+    id("com.meta.spatial.plugin") version "0.7.0" apply true
+    id("com.google.devtools.ksp") version "2.0.20-1.0.24" apply true
 }
