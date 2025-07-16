@@ -3,6 +3,9 @@ package com.hackathon.spatialvideopoker.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.hackathon.spatialvideopoker.audio.SoundManager
+import com.hackathon.spatialvideopoker.data.GameSettings
+import com.hackathon.spatialvideopoker.data.SettingsManager
 import com.hackathon.spatialvideopoker.data.VideoPokerDatabase
 import com.hackathon.spatialvideopoker.data.dao.GameStateDao
 import com.hackathon.spatialvideopoker.data.dao.StatisticsDao
@@ -29,6 +32,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private val gameStateMachine = GameStateMachine()
     private val creditManager by lazy { CreditManager(gameStateDao) }
     
+    private val soundManager = SoundManager(application)
+    private val settingsManager = SettingsManager(application)
+    private var currentSettings = settingsManager.loadSettings()
+    
     private val _gameState = MutableStateFlow(GameUiState())
     val gameState: StateFlow<GameUiState> = _gameState.asStateFlow()
     
@@ -42,12 +49,24 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val lastWinAmount: Int = 0,
         val isDealing: Boolean = false,
         val isDrawing: Boolean = false,
-        val message: String = "Place your bet and press DEAL"
+        val message: String = "Place your bet and press DEAL",
+        val showPaytable: Boolean = false,
+        val showSettings: Boolean = false,
+        val gameSettings: GameSettings = GameSettings()
     )
     
     init {
         // Start with default credits, load from database later
-        _gameState.update { it.copy(credits = 1000) }
+        _gameState.update { it.copy(
+            credits = 1000,
+            gameSettings = currentSettings
+        ) }
+        
+        // Apply initial settings
+        soundManager.setSoundEnabled(currentSettings.soundEnabled)
+        soundManager.setMusicEnabled(currentSettings.musicEnabled)
+        soundManager.setSoundVolume(currentSettings.soundVolume)
+        soundManager.setMusicVolume(currentSettings.musicVolume)
     }
     
     fun deal() {
@@ -59,6 +78,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 updateMessage("Insufficient credits")
                 return@launch
             }
+            
+            // Play button sound
+            soundManager.playSound(SoundManager.SoundEffect.BUTTON_CLICK)
             
             // Deduct bet
             creditManager.deductBet(bet)
@@ -82,8 +104,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             deck.shuffle()
             val dealtCards = deck.deal(5)
             
-            // Animate dealing
-            delay(500) // Simulate dealing animation
+            // Play dealing sound
+            soundManager.playSound(SoundManager.SoundEffect.CARD_DEAL)
+            
+            // Animate dealing with adjusted speed based on settings
+            delay((500 * currentSettings.gameSpeed.delayMultiplier).toLong())
             
             _gameState.update { 
                 it.copy(
@@ -105,6 +130,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     
     fun toggleHold(cardIndex: Int) {
         if (!gameStateMachine.canHoldCards()) return
+        
+        soundManager.playSound(SoundManager.SoundEffect.CARD_FLIP)
         
         _gameState.update { state ->
             val newHeldIndices = if (cardIndex in state.heldCardIndices) {
@@ -187,12 +214,19 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
         
         if (payout > 0) {
+            // Play win sound based on hand rank
+            if (handRank.ordinal >= HandEvaluator.HandRank.FULL_HOUSE.ordinal) {
+                soundManager.playSound(SoundManager.SoundEffect.WIN_BIG)
+            } else {
+                soundManager.playSound(SoundManager.SoundEffect.WIN_SMALL)
+            }
+            
             creditManager.addWinnings(payout)
             updateMessage("${handRank.displayName}! Win: $payout credits")
-            delay(2000) // Show win message
+            delay((2000 * currentSettings.gameSpeed.delayMultiplier).toLong())
         } else {
             updateMessage("No win. Try again!")
-            delay(1000)
+            delay((1000 * currentSettings.gameSpeed.delayMultiplier).toLong())
         }
         
         // Return to betting phase
@@ -212,6 +246,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         
         val credits = creditManager.getCurrentCredits()
         if (bettingManager.placeBet(amount, credits)) {
+            soundManager.playSound(SoundManager.SoundEffect.COIN_INSERT)
             _gameState.update { 
                 it.copy(currentBet = amount)
             }
@@ -226,6 +261,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         
         val credits = creditManager.getCurrentCredits()
         if (bettingManager.incrementBet(credits)) {
+            soundManager.playSound(SoundManager.SoundEffect.COIN_INSERT)
             _gameState.update { 
                 it.copy(currentBet = bettingManager.currentBet)
             }
@@ -240,6 +276,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         
         val credits = creditManager.getCurrentCredits()
         if (bettingManager.maxBet(credits)) {
+            soundManager.playSound(SoundManager.SoundEffect.COIN_INSERT)
             _gameState.update { 
                 it.copy(currentBet = bettingManager.currentBet)
             }
@@ -256,5 +293,33 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     
     private fun updateMessage(message: String) {
         _gameState.update { it.copy(message = message) }
+    }
+    
+    fun togglePaytable() {
+        soundManager.playSound(SoundManager.SoundEffect.BUTTON_CLICK)
+        _gameState.update { it.copy(showPaytable = !it.showPaytable) }
+    }
+    
+    fun toggleSettings() {
+        soundManager.playSound(SoundManager.SoundEffect.BUTTON_CLICK)
+        _gameState.update { it.copy(showSettings = !it.showSettings) }
+    }
+    
+    fun updateSettings(newSettings: GameSettings) {
+        currentSettings = newSettings
+        settingsManager.saveSettings(newSettings)
+        
+        // Apply settings to sound manager
+        soundManager.setSoundEnabled(newSettings.soundEnabled)
+        soundManager.setMusicEnabled(newSettings.musicEnabled)
+        soundManager.setSoundVolume(newSettings.soundVolume)
+        soundManager.setMusicVolume(newSettings.musicVolume)
+        
+        _gameState.update { it.copy(gameSettings = newSettings) }
+    }
+    
+    override fun onCleared() {
+        super.onCleared()
+        soundManager.release()
     }
 }

@@ -43,6 +43,8 @@ fun GameScreen(
                 credits = gameState.credits,
                 currentBet = gameState.currentBet,
                 lastWin = gameState.lastWinAmount,
+                onPaytableClick = { viewModel.togglePaytable() },
+                onSettingsClick = { viewModel.toggleSettings() },
                 modifier = Modifier.fillMaxWidth()
             )
             
@@ -99,6 +101,24 @@ fun GameScreen(
                 onAnimationComplete = {
                     showWinAnimation = false
                 }
+            )
+        }
+        
+        // Paytable overlay
+        if (gameState.showPaytable) {
+            PaytableScreen(
+                onDismiss = { viewModel.togglePaytable() }
+            )
+        }
+        
+        // Settings overlay
+        if (gameState.showSettings) {
+            SettingsScreen(
+                currentSettings = gameState.gameSettings,
+                onSettingsChanged = { newSettings ->
+                    viewModel.updateSettings(newSettings)
+                },
+                onDismiss = { viewModel.toggleSettings() }
             )
         }
     }

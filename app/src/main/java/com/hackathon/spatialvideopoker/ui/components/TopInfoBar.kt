@@ -5,9 +5,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -22,6 +23,8 @@ fun TopInfoBar(
     credits: Int,
     currentBet: Int,
     lastWin: Int,
+    onPaytableClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -34,27 +37,62 @@ fun TopInfoBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            InfoItem(
-                label = "CREDITS",
-                value = credits.toString(),
-                color = Color.Yellow
-            )
+            // Menu buttons
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                IconButton(
+                    onClick = onPaytableClick,
+                    colors = IconButtonDefaults.iconButtonColors(
+                        contentColor = Color.Yellow
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = "Paytable"
+                    )
+                }
+                
+                IconButton(
+                    onClick = onSettingsClick,
+                    colors = IconButtonDefaults.iconButtonColors(
+                        contentColor = Color.Yellow
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Settings"
+                    )
+                }
+            }
             
-            InfoItem(
-                label = "BET",
-                value = currentBet.toString(),
-                color = Color.White
-            )
-            
-            InfoItem(
-                label = "WIN",
-                value = lastWin.toString(),
-                color = if (lastWin > 0) Color.Green else Color.White
-            )
+            // Game info
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                InfoItem(
+                    label = "CREDITS",
+                    value = credits.toString(),
+                    color = Color.Yellow
+                )
+                
+                InfoItem(
+                    label = "BET",
+                    value = currentBet.toString(),
+                    color = Color.White
+                )
+                
+                InfoItem(
+                    label = "WIN",
+                    value = lastWin.toString(),
+                    color = if (lastWin > 0) Color.Green else Color.White
+                )
+            }
         }
     }
 }

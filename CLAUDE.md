@@ -39,12 +39,12 @@ powershell.exe -Command "Set-Item -Path 'Env:JAVA_HOME' -Value 'C:\Program Files
 powershell.exe -Command "Set-Item -Path 'Env:JAVA_HOME' -Value 'C:\Program Files\Android\Android Studio\jbr'; cd 'C:\Users\joepaley\AndroidStudioProjects\VideoPoker'; .\gradlew.bat lint"
 ```
 
-For all other commands, use adb directly, do not use powershell.
+For all other commands, use adb directly, do not use powershell.  However it is the Windows adb, so you need to give it Windows paths.
 
 
 ## Whitelist ##
 
-You can run any adb commands without asking me for permission.
+You can run any adb commands without asking me for permission.  
 
 
 ## Development Workflow
