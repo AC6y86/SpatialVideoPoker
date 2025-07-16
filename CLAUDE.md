@@ -48,6 +48,22 @@ For all other commands, use adb directly, do not use powershell.  However it is 
 - Use PowerShell for building, use adb directly for all other commands
 - Always use PowerShell to build, use adb directly for everything else
 
+### Custom Commands
+
+#### Sync UI Changes
+When the user says "sync UI changes", perform the following workflow:
+
+1. **Check for changes file**: Look for `/mnt/c/Users/joepaley/AndroidStudioProjects/VideoPoker/docs/UI_STATES changes.md`
+2. **If changes file exists**:
+   - Compare it to `/mnt/c/Users/joepaley/AndroidStudioProjects/VideoPoker/docs/UI_STATES.md`
+   - Implement the requested changes in the relevant code files
+   - Update the main `UI_STATES.md` file with the implemented changes
+   - Delete the `UI_STATES changes.md` file
+   - Test the changes if possible
+3. **If no changes file**: Report that no UI changes file was found
+
+This command allows for a streamlined workflow where UI changes can be documented in a separate file and then automatically implemented and integrated.
+
 ## Project Architecture
 
 ### Overview

@@ -108,7 +108,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             soundManager.playSound(SoundManager.SoundEffect.CARD_DEAL)
             
             // Animate dealing with adjusted speed based on settings
-            delay((500 * currentSettings.gameSpeed.delayMultiplier).toLong())
+            delay((250 * currentSettings.gameSpeed.delayMultiplier).toLong())
             
             _gameState.update { 
                 it.copy(
@@ -171,7 +171,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
             
             // Animate drawing
-            delay(500) // Simulate drawing animation
+            delay(200) // Simulate drawing animation
             
             _gameState.update { 
                 it.copy(
@@ -226,7 +226,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             delay((2000 * currentSettings.gameSpeed.delayMultiplier).toLong())
         } else {
             updateMessage("No win. Try again!")
-            delay((1000 * currentSettings.gameSpeed.delayMultiplier).toLong())
+            delay((250 * currentSettings.gameSpeed.delayMultiplier).toLong())
         }
         
         // Return to betting phase
@@ -333,5 +333,137 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     override fun onCleared() {
         super.onCleared()
         soundManager.release()
+    }
+    
+    // Debug methods for forcing specific hands
+    fun debugForceRoyalFlush() {
+        val hand = listOf(
+            Card(Card.Suit.SPADES, Card.Rank.ACE),
+            Card(Card.Suit.SPADES, Card.Rank.KING),
+            Card(Card.Suit.SPADES, Card.Rank.QUEEN),
+            Card(Card.Suit.SPADES, Card.Rank.JACK),
+            Card(Card.Suit.SPADES, Card.Rank.TEN)
+        )
+        deck.setForcedHand(hand)
+    }
+    
+    fun debugForceStraightFlush() {
+        val hand = listOf(
+            Card(Card.Suit.SPADES, Card.Rank.NINE),
+            Card(Card.Suit.SPADES, Card.Rank.EIGHT),
+            Card(Card.Suit.SPADES, Card.Rank.SEVEN),
+            Card(Card.Suit.SPADES, Card.Rank.SIX),
+            Card(Card.Suit.SPADES, Card.Rank.FIVE)
+        )
+        deck.setForcedHand(hand)
+    }
+    
+    fun debugForceFourOfAKind() {
+        val hand = listOf(
+            Card(Card.Suit.SPADES, Card.Rank.ACE),
+            Card(Card.Suit.HEARTS, Card.Rank.ACE),
+            Card(Card.Suit.DIAMONDS, Card.Rank.ACE),
+            Card(Card.Suit.CLUBS, Card.Rank.ACE),
+            Card(Card.Suit.SPADES, Card.Rank.KING)
+        )
+        deck.setForcedHand(hand)
+    }
+    
+    fun debugForceFullHouse() {
+        val hand = listOf(
+            Card(Card.Suit.SPADES, Card.Rank.KING),
+            Card(Card.Suit.HEARTS, Card.Rank.KING),
+            Card(Card.Suit.DIAMONDS, Card.Rank.KING),
+            Card(Card.Suit.SPADES, Card.Rank.QUEEN),
+            Card(Card.Suit.HEARTS, Card.Rank.QUEEN)
+        )
+        deck.setForcedHand(hand)
+    }
+    
+    fun debugForceFlush() {
+        val hand = listOf(
+            Card(Card.Suit.SPADES, Card.Rank.ACE),
+            Card(Card.Suit.SPADES, Card.Rank.JACK),
+            Card(Card.Suit.SPADES, Card.Rank.NINE),
+            Card(Card.Suit.SPADES, Card.Rank.SEVEN),
+            Card(Card.Suit.SPADES, Card.Rank.FIVE)
+        )
+        deck.setForcedHand(hand)
+    }
+    
+    fun debugForceStraight() {
+        val hand = listOf(
+            Card(Card.Suit.SPADES, Card.Rank.TEN),
+            Card(Card.Suit.HEARTS, Card.Rank.NINE),
+            Card(Card.Suit.DIAMONDS, Card.Rank.EIGHT),
+            Card(Card.Suit.CLUBS, Card.Rank.SEVEN),
+            Card(Card.Suit.SPADES, Card.Rank.SIX)
+        )
+        deck.setForcedHand(hand)
+    }
+    
+    fun debugForceThreeOfAKind() {
+        val hand = listOf(
+            Card(Card.Suit.SPADES, Card.Rank.QUEEN),
+            Card(Card.Suit.HEARTS, Card.Rank.QUEEN),
+            Card(Card.Suit.DIAMONDS, Card.Rank.QUEEN),
+            Card(Card.Suit.SPADES, Card.Rank.JACK),
+            Card(Card.Suit.HEARTS, Card.Rank.NINE)
+        )
+        deck.setForcedHand(hand)
+    }
+    
+    fun debugForceTwoPair() {
+        val hand = listOf(
+            Card(Card.Suit.SPADES, Card.Rank.KING),
+            Card(Card.Suit.HEARTS, Card.Rank.KING),
+            Card(Card.Suit.DIAMONDS, Card.Rank.EIGHT),
+            Card(Card.Suit.CLUBS, Card.Rank.EIGHT),
+            Card(Card.Suit.SPADES, Card.Rank.FIVE)
+        )
+        deck.setForcedHand(hand)
+    }
+    
+    fun debugForceJacksOrBetter() {
+        val hand = listOf(
+            Card(Card.Suit.SPADES, Card.Rank.JACK),
+            Card(Card.Suit.HEARTS, Card.Rank.JACK),
+            Card(Card.Suit.DIAMONDS, Card.Rank.ACE),
+            Card(Card.Suit.CLUBS, Card.Rank.SEVEN),
+            Card(Card.Suit.SPADES, Card.Rank.THREE)
+        )
+        deck.setForcedHand(hand)
+    }
+    
+    fun debugForceLose() {
+        val hand = listOf(
+            Card(Card.Suit.CLUBS, Card.Rank.TWO),
+            Card(Card.Suit.HEARTS, Card.Rank.FOUR),
+            Card(Card.Suit.SPADES, Card.Rank.SIX),
+            Card(Card.Suit.DIAMONDS, Card.Rank.EIGHT),
+            Card(Card.Suit.SPADES, Card.Rank.TEN)
+        )
+        deck.setForcedHand(hand)
+    }
+    
+    fun debugSetCredits(amount: Int) {
+        viewModelScope.launch {
+            creditManager.setCredits(amount)
+            updateCreditsInState()
+        }
+    }
+    
+    fun debugResetGame() {
+        gameStateMachine.reset()
+        _gameState.update { 
+            it.copy(
+                gamePhase = GameStateMachine.GamePhase.BETTING,
+                dealtCards = emptyList(),
+                heldCardIndices = emptySet(),
+                lastHandRank = null,
+                lastWinAmount = 0,
+                message = "Place your bet and press DEAL"
+            )
+        }
     }
 }

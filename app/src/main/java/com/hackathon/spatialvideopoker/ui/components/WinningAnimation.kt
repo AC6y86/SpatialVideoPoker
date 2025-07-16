@@ -62,7 +62,7 @@ fun WinAmountDisplay(
             
             if (steps > 0) {
                 for (i in 1..steps) {
-                    delay(50L) // 20 per second
+                    delay(100L) // 10 per second
                     displayAmount = i + 1
                 }
             }

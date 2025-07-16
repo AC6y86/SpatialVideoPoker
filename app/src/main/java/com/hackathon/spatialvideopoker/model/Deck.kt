@@ -5,6 +5,7 @@ import java.security.SecureRandom
 class Deck {
     private val cards = mutableListOf<Card>()
     private val dealtCards = mutableListOf<Card>()
+    private var forcedHand: List<Card>? = null
     
     init {
         reset()
@@ -33,6 +34,14 @@ class Deck {
     }
     
     fun deal(count: Int): List<Card> {
+        // If we have a forced hand and dealing 5 cards (initial deal), return it
+        if (forcedHand != null && count == 5) {
+            val result = forcedHand!!
+            forcedHand = null // Clear after use
+            dealtCards.addAll(result)
+            return result
+        }
+        
         require(count <= cards.size) { "Not enough cards remaining in deck" }
         
         val dealtHand = mutableListOf<Card>()
@@ -51,5 +60,10 @@ class Deck {
     fun returnCardsToDeck(cardsToReturn: List<Card>) {
         cards.addAll(cardsToReturn)
         dealtCards.removeAll(cardsToReturn)
+    }
+    
+    fun setForcedHand(cards: List<Card>) {
+        require(cards.size == 5) { "Forced hand must contain exactly 5 cards" }
+        forcedHand = cards
     }
 }

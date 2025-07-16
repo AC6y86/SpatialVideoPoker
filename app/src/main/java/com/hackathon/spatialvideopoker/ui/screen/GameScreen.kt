@@ -3,7 +3,11 @@ package com.hackathon.spatialvideopoker.ui.screen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -27,6 +31,8 @@ import com.hackathon.spatialvideopoker.viewmodel.GameViewModel
 fun GameScreen(
     viewModel: GameViewModel = viewModel()
 ) {
+    // Debug mode flag - set to true for development
+    val isDebugMode = false
     val gameState by viewModel.gameState.collectAsState()
     var showWinAnimation by remember { mutableStateOf(false) }
     
@@ -67,7 +73,7 @@ fun GameScreen(
                         gameState.gamePhase == GameStateMachine.GamePhase.DEALING -> "Dealing..."
                         gameState.gamePhase == GameStateMachine.GamePhase.HOLDING -> "Select cards to HOLD, then press DRAW"
                         gameState.gamePhase == GameStateMachine.GamePhase.DRAWING -> "Drawing..."
-                        gameState.gamePhase == GameStateMachine.GamePhase.EVALUATING -> "Evaluating..."
+                        gameState.gamePhase == GameStateMachine.GamePhase.EVALUATING -> ""
                         gameState.gamePhase == GameStateMachine.GamePhase.PAYOUT && gameState.lastWinAmount > 0 -> 
                             gameState.lastHandRank!!.displayName.uppercase()
                         gameState.gamePhase == GameStateMachine.GamePhase.PAYOUT && gameState.lastWinAmount == 0 -> "LOSE"
@@ -158,8 +164,8 @@ fun GameScreen(
         LaunchedEffect(gameState.lastWinAmount, gameState.gamePhase) {
             if (gameState.lastWinAmount > 0 && gameState.gamePhase == GameStateMachine.GamePhase.PAYOUT) {
                 showWinAnimation = true
-                // Wait for counter animation to complete (amount * 50ms + 1 second)  
-                val counterDuration = (gameState.lastWinAmount - 1) * 50L
+                // Wait for counter animation to complete (amount * 100ms + 1 second)  
+                val counterDuration = (gameState.lastWinAmount - 1) * 100L
                 delay(counterDuration + 1000L) // Counter duration + 1 second
                 showWinAnimation = false
                 // Reset game state to show "Click Deal to start" banner
@@ -174,6 +180,109 @@ fun GameScreen(
                 gameState.dealtCards.isNotEmpty()) {
                 // This is a losing hand that just finished, reset to show banner
                 viewModel.resetForNextHand()
+            }
+        }
+        
+        // Debug panel (only when debug mode is enabled)
+        if (isDebugMode) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(16.dp)
+                    .background(
+                        Color.Black.copy(alpha = 0.8f),
+                        RoundedCornerShape(8.dp)
+                    )
+                    .padding(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = "DEBUG",
+                    color = Color.Yellow,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                // Hand forcing buttons
+                val handButtons = listOf(
+                    "Royal" to { viewModel.debugForceRoyalFlush() },
+                    "StFlush" to { viewModel.debugForceStraightFlush() },
+                    "4Kind" to { viewModel.debugForceFourOfAKind() },
+                    "FHouse" to { viewModel.debugForceFullHouse() },
+                    "Flush" to { viewModel.debugForceFlush() },
+                    "Straight" to { viewModel.debugForceStraight() },
+                    "3Kind" to { viewModel.debugForceThreeOfAKind() },
+                    "2Pair" to { viewModel.debugForceTwoPair() },
+                    "Jacks" to { viewModel.debugForceJacksOrBetter() },
+                    "Lose" to { viewModel.debugForceLose() }
+                )
+                
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(handButtons) { (label, action) ->
+                        Button(
+                            onClick = action,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.Red.copy(alpha = 0.7f)
+                            ),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Text(
+                                text = label,
+                                fontSize = 10.sp,
+                                color = Color.White
+                            )
+                        }
+                    }
+                }
+                
+                // Utility buttons
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Button(
+                        onClick = { viewModel.debugSetCredits(1000) },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Green.copy(alpha = 0.7f)
+                        ),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Text(
+                            text = "1000$",
+                            fontSize = 10.sp,
+                            color = Color.White
+                        )
+                    }
+                    
+                    Button(
+                        onClick = { viewModel.debugSetCredits(10000) },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Green.copy(alpha = 0.7f)
+                        ),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Text(
+                            text = "10000$",
+                            fontSize = 10.sp,
+                            color = Color.White
+                        )
+                    }
+                    
+                    Button(
+                        onClick = { viewModel.debugResetGame() },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Blue.copy(alpha = 0.7f)
+                        ),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Text(
+                            text = "Reset",
+                            fontSize = 10.sp,
+                            color = Color.White
+                        )
+                    }
+                }
             }
         }
         

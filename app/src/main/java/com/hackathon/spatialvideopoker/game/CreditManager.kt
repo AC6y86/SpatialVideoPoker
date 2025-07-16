@@ -53,6 +53,11 @@ class CreditManager(private val gameStateDao: GameStateDao) {
         saveCredits()
     }
     
+    suspend fun setCredits(amount: Int) {
+        credits = maxOf(amount, MINIMUM_CREDITS)
+        saveCredits()
+    }
+    
     fun getCurrentCredits(): Int = credits
     
     fun hasCredits(): Boolean = credits > MINIMUM_CREDITS

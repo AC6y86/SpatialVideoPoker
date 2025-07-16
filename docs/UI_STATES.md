@@ -28,7 +28,7 @@ The Video Poker game uses two distinct UI messaging systems:
 - **Banner**: "Dealing..."
 - **Overlay**: None
 - **Cards**: Animation of cards being dealt
-- **Duration**: ~500ms
+- **Duration**: ~250ms
 - **Transition**: Automatic to HOLDING phase
 
 ### **State 3: Holding Phase**
@@ -41,11 +41,11 @@ The Video Poker game uses two distinct UI messaging systems:
 - **Banner**: "Drawing..."
 - **Overlay**: None
 - **Cards**: Animation of non-held cards being replaced
-- **Duration**: ~500ms
+- **Duration**: ~200ms
 - **Transition**: Automatic to EVALUATING phase
 
 ### **State 5: Evaluating Phase**
-- **Banner**: "Evaluating..."
+- **Banner**: None
 - **Overlay**: None
 - **Cards**: Final 5 cards displayed
 - **Duration**: Brief moment
@@ -56,14 +56,14 @@ The Video Poker game uses two distinct UI messaging systems:
 - **Overlay**: None
 - **Cards**: Winning cards displayed
 - **Additional**: "WIN [amount]" counter animation in lower left
-- **Duration**: Counter animation (1 to final amount at 20/second) + 1 second
+- **Duration**: Counter animation (1 to final amount at 10/second) + 1 second
 - **Transition**: Automatic to BETTING phase after animation
 
 ### **State 6B: Payout Phase - Losing Hand**
 - **Banner**: "Lose"
 - **Overlay**: None
 - **Cards**: Losing cards displayed
-- **Duration**: ~1 second
+- **Duration**: 250ms
 - **Transition**: Automatic to BETTING phase
 
 ### **State 7: Post-Hand Betting Phase**
@@ -80,7 +80,7 @@ The Video Poker game uses two distinct UI messaging systems:
 | DEALING | "Dealing..." | Shows during card dealing animation |
 | HOLDING | "Select cards to HOLD, then press DRAW" | Player interaction phase |
 | DRAWING | "Drawing..." | Shows during card replacement animation |
-| EVALUATING | "Evaluating..." | Brief evaluation phase |
+| EVALUATING | *(none)* | Brief evaluation phase |
 | PAYOUT (win) | Hand name (e.g., "JACKS OR BETTER") | Shows winning hand type |
 | PAYOUT (lose) | "Lose" | Shows for losing hands |
 | BETTING (post-hand) | Previous result (hand name or "Lose") | **Persists until new DEAL** |
@@ -126,7 +126,7 @@ showDealBanner = gameState.gamePhase == GameStateMachine.GamePhase.BETTING && ga
 
 ## WIN Animation Integration
 
-- **Winning Hands**: WIN counter animates from 1 to final amount at 20/second
+- **Winning Hands**: WIN counter animates from 1 to final amount at 10/second
 - **Position**: Lower left corner, does not overlap with cards
 - **Duration**: Synchronized with banner display
 - **Persistence**: WIN amount stays visible until new hand starts
