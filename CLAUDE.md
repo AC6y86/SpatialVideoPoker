@@ -113,3 +113,11 @@ The game implements Jacks or Better video poker with:
 - Currently has a basic MainActivity with a greeting composable
 - Ready for implementation of poker game logic and UI
 - Design follows Material3 guidelines with dynamic color support on Android 12+
+
+## Tips and Tricks
+
+### How to Take Screenshots
+- Use Android Studio's built-in screenshot tool
+- Press `Shift + F12` in Android Studio Emulator
+- Use ADB command: `adb shell screencap -p /sdcard/screenshot.png`
+- Pull screenshot to local machine: `adb pull /sdcard/screenshot.png`

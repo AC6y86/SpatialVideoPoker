@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.hackathon.spatialvideopoker.model.Card
 import com.hackathon.spatialvideopoker.ui.theme.*
 import kotlinx.coroutines.delay
@@ -33,102 +34,18 @@ fun CardView(
     enabled: Boolean,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+    Box(
+        modifier = modifier
     ) {
-        // Card
-        Card(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .clickable(enabled = enabled) { onClick() },
-            shape = RoundedCornerShape(8.dp), // Slightly more rounded
-            colors = CardDefaults.cardColors(
-                containerColor = if (card != null) CardWhite else Color(0xFF000066) // Dark blue for empty cards
-            ),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 8.dp // More prominent shadow
-            ),
-            border = BorderStroke(1.dp, Color.Black) // Add black border
-        ) {
-            if (card != null) {
-                // Card face
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        // Rank
-                        Text(
-                            text = card.rank.symbol,
-                            fontSize = 36.sp, // Smaller font
-                            fontWeight = FontWeight.ExtraBold,
-                            fontFamily = FontFamily.SansSerif,
-                            color = if (card.suit.color == Card.CardColor.RED) Color.Red else Color.Black
-                        )
-                        
-                        // Suit
-                        Text(
-                            text = card.suit.symbol,
-                            fontSize = 32.sp, // Smaller font
-                            fontFamily = FontFamily.SansSerif,
-                            color = if (card.suit.color == Card.CardColor.RED) Color.Red else Color.Black
-                        )
-                    }
-                    
-                    // Rank in corners
-                    Text(
-                        text = card.rank.symbol,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (card.suit.color == Card.CardColor.RED) Color.Red else Color.Black,
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(8.dp)
-                    )
-                    
-                    Text(
-                        text = card.rank.symbol,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (card.suit.color == Card.CardColor.RED) Color.Red else Color.Black,
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(8.dp)
-                    )
-                }
-            } else {
-                // Card back - dark blue with pattern
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color(0xFF000066))
-                ) {
-                    // Add simple pattern or logo
-                    Text(
-                        text = "VIDEO\nPOKER",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0000CC),
-                        fontFamily = FontFamily.SansSerif,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-            }
-        }
-        
-        // HELD indicator below card
+        // HELD indicator above card
         if (isHeld && card != null) {
             Box(
                 modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .offset(y = (-8).dp)
                     .background(CasinoRed, RoundedCornerShape(2.dp))
                     .padding(horizontal = 12.dp, vertical = 2.dp)
+                    .zIndex(1f)
             ) {
                 Text(
                     text = "HELD",
@@ -138,9 +55,96 @@ fun CardView(
                     fontFamily = FontFamily.Monospace
                 )
             }
-        } else {
-            // Empty space to maintain layout
-            Spacer(modifier = Modifier.height(20.dp))
+        }
+        
+        // Card
+        Card(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(enabled = enabled) { onClick() },
+            shape = RoundedCornerShape(8.dp), // Slightly more rounded
+            colors = CardDefaults.cardColors(
+                containerColor = if (card != null) Color.White else Color(0xFF000066) // Pure white for cards
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 4.dp // Subtle shadow
+            ),
+            border = BorderStroke(2.dp, Color.Black) // Slightly thicker border
+        ) {
+            if (card != null) {
+                // Card face
+                BoxWithConstraints(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    val cardHeight = maxHeight
+                    val cardWidth = maxWidth
+                    
+                    // Value and suit in upper left corner (proportional to card size)
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(
+                                start = cardWidth * 0.06f,
+                                top = cardHeight * 0.06f
+                            ),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = card.rank.symbol,
+                            fontSize = (cardHeight.value * 0.14f).sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.SansSerif,
+                            color = if (card.suit.color == Card.CardColor.RED) Color(0xFFFF0000) else Color(0xFF000000)
+                        )
+                        Text(
+                            text = card.suit.symbol,
+                            fontSize = (cardHeight.value * 0.12f).sp,
+                            fontFamily = FontFamily.SansSerif,
+                            color = if (card.suit.color == Card.CardColor.RED) Color(0xFFFF0000) else Color(0xFF000000)
+                        )
+                    }
+                    
+                    // Bottom suit symbol (smaller size)
+                    Text(
+                        text = card.suit.symbol,
+                        fontSize = (cardHeight.value * 0.30f).sp,
+                        fontFamily = FontFamily.SansSerif,
+                        color = if (card.suit.color == Card.CardColor.RED) Color(0xFFFF0000) else Color(0xFF000000),
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = cardHeight * 0.10f)
+                    )
+                }
+            } else {
+                // Card back with diamond pattern
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(0xFFCC6666))
+                ) {
+                    // Create a simple pattern effect
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        repeat(8) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                repeat(5) {
+                                    Text(
+                                        text = "◆",
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF993333),
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

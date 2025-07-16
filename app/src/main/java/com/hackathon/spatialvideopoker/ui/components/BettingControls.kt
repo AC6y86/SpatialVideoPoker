@@ -40,7 +40,7 @@ fun BettingControls(
     
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // BET ONE button
         CasinoButton(
@@ -53,18 +53,18 @@ fun BettingControls(
             color = CasinoYellow,
             textColor = Color.Black,
             modifier = Modifier.weight(1f),
-            height = 40.dp
+            height = 50.dp
         )
         
         // SEE PAYS button
         CasinoButton(
-            text = "SEE/\\nPAYS",
+            text = "SEE PAYS",
             enabled = true,
             onClick = onPaytableClick,
-            color = Color.Gray,
+            color = CasinoYellow,
             textColor = Color.Black,
             modifier = Modifier.weight(1f),
-            height = 40.dp
+            height = 50.dp
         )
         
         // MAX BET button
@@ -75,7 +75,7 @@ fun BettingControls(
             color = CasinoYellow,
             textColor = Color.Black,
             modifier = Modifier.weight(1f),
-            height = 40.dp
+            height = 50.dp
         )
         
         // DEAL/DRAW button
@@ -96,7 +96,7 @@ fun BettingControls(
             color = if (isHoldingPhase) Color.Red else CasinoYellow,
             textColor = if (isHoldingPhase) Color.White else Color.Black,
             modifier = Modifier.weight(1f),
-            height = 40.dp
+            height = 50.dp
         )
     }
 }
@@ -115,27 +115,60 @@ private fun CasinoButton(
         modifier = modifier
             .height(height)
             .background(
-                color = if (enabled) color else Color.DarkGray,
-                shape = RoundedCornerShape(4.dp)
+                brush = if (enabled) {
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            color.copy(alpha = 0.9f),
+                            color,
+                            color.copy(alpha = 0.7f)
+                        )
+                    )
+                } else {
+                    Brush.verticalGradient(
+                        colors = listOf(Color.DarkGray, Color.DarkGray)
+                    )
+                },
+                shape = RoundedCornerShape(6.dp)
             )
             .border(
                 width = 2.dp,
-                color = if (enabled) Color.Black else Color.Black.copy(alpha = 0.2f),
-                shape = RoundedCornerShape(4.dp)
+                brush = Brush.verticalGradient(
+                    colors = if (enabled) {
+                        listOf(
+                            Color.White.copy(alpha = 0.5f),
+                            Color.Black.copy(alpha = 0.8f)
+                        )
+                    } else {
+                        listOf(Color.Black.copy(alpha = 0.2f), Color.Black.copy(alpha = 0.2f))
+                    }
+                ),
+                shape = RoundedCornerShape(6.dp)
             )
             .clickable(enabled = enabled) {
                 onClick()
             },
         contentAlignment = Alignment.Center
     ) {
+        // Inner shadow effect
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(1.dp)
+                .background(
+                    Color.Black.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(4.dp)
+                )
+        )
+        
         Text(
             text = text,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.ExtraBold,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Black,
             color = if (enabled) textColor else Color.Gray,
             fontFamily = FontFamily.SansSerif,
-            lineHeight = 12.sp,
-            textAlign = TextAlign.Center
+            lineHeight = 14.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(bottom = 2.dp)
         )
     }
 }

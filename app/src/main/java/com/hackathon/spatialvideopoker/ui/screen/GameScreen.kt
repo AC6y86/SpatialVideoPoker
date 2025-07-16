@@ -43,8 +43,7 @@ fun GameScreen(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(8.dp),
+                .fillMaxSize(),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             // Integrated Paytable (always visible at top)
@@ -55,22 +54,26 @@ fun GameScreen(
                 modifier = Modifier.fillMaxWidth()
             )
             
-            // Game message (single line)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = gameState.message,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = PaytableText,
-                    fontFamily = FontFamily.SansSerif,
-                    textAlign = TextAlign.Center,
-                    letterSpacing = 0.5.sp
-                )
+            // Game message - show as banner when in betting phase
+            if (gameState.gamePhase == GameStateMachine.GamePhase.BETTING && gameState.dealtCards.isEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = gameState.message,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PaytableText,
+                        fontFamily = FontFamily.SansSerif,
+                        textAlign = TextAlign.Center,
+                        letterSpacing = 0.5.sp
+                    )
+                }
             }
             
             // Card display area
@@ -89,8 +92,10 @@ fun GameScreen(
             
             // Combined credit display and controls
             Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // Credit Panel
                 CreditPanel(

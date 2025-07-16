@@ -25,20 +25,21 @@ fun IntegratedPaytable(
     modifier: Modifier = Modifier
 ) {
     val payouts = listOf(
-        PayoutRow("ROYAL FLUSH", listOf(5000, 16000, 24000, 32000, 40000), HandEvaluator.HandRank.ROYAL_FLUSH),
-        PayoutRow("STRAIGHT FLUSH", listOf(500, 1000, 1500, 2000, 2500), HandEvaluator.HandRank.STRAIGHT_FLUSH),
-        PayoutRow("4 OF A KIND", listOf(250, 500, 750, 1000, 1250), HandEvaluator.HandRank.FOUR_OF_A_KIND),
-        PayoutRow("FULL HOUSE", listOf(90, 180, 270, 360, 450), HandEvaluator.HandRank.FULL_HOUSE),
-        PayoutRow("FLUSH", listOf(60, 120, 180, 240, 300), HandEvaluator.HandRank.FLUSH),
-        PayoutRow("STRAIGHT", listOf(40, 80, 120, 160, 200), HandEvaluator.HandRank.STRAIGHT),
-        PayoutRow("3 OF A KIND", listOf(30, 60, 90, 120, 150), HandEvaluator.HandRank.THREE_OF_A_KIND),
-        PayoutRow("TWO PAIR", listOf(20, 40, 60, 80, 100), HandEvaluator.HandRank.TWO_PAIR),
-        PayoutRow("JACKS OR", listOf(10, 20, 30, 40, 50), HandEvaluator.HandRank.JACKS_OR_BETTER)
+        PayoutRow("ROYAL FLUSH", listOf(250, 500, 750, 1000, 4000), HandEvaluator.HandRank.ROYAL_FLUSH),
+        PayoutRow("STRAIGHT FLUSH", listOf(50, 100, 150, 200, 250), HandEvaluator.HandRank.STRAIGHT_FLUSH),
+        PayoutRow("4 OF A KIND", listOf(25, 50, 75, 100, 125), HandEvaluator.HandRank.FOUR_OF_A_KIND),
+        PayoutRow("FULL HOUSE", listOf(9, 18, 27, 36, 45), HandEvaluator.HandRank.FULL_HOUSE),
+        PayoutRow("FLUSH", listOf(6, 12, 18, 24, 30), HandEvaluator.HandRank.FLUSH),
+        PayoutRow("STRAIGHT", listOf(4, 8, 12, 16, 20), HandEvaluator.HandRank.STRAIGHT),
+        PayoutRow("3 OF A KIND", listOf(3, 6, 9, 12, 15), HandEvaluator.HandRank.THREE_OF_A_KIND),
+        PayoutRow("TWO PAIR", listOf(2, 4, 6, 8, 10), HandEvaluator.HandRank.TWO_PAIR),
+        PayoutRow("JACKS OR BETTER", listOf(1, 2, 3, 4, 5), HandEvaluator.HandRank.JACKS_OR_BETTER)
     )
     
     Column(
         modifier = modifier
             .background(Color.Black)
+            .border(2.dp, Color.Yellow)
     ) {
             // Payout rows
             payouts.forEach { (handName, payoutAmounts, handRank) ->
@@ -47,21 +48,21 @@ fun IntegratedPaytable(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(20.dp),
+                        .height(26.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Hand name - left aligned
                     Box(
                         modifier = Modifier
-                            .width(95.dp)
+                            .width(140.dp)
                             .fillMaxHeight()
                             .background(Color(0xFF000066))
-                            .padding(start = 4.dp),
+                            .padding(start = 8.dp),
                         contentAlignment = Alignment.CenterStart
                     ) {
                         Text(
                             text = handName,
-                            fontSize = 10.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.Yellow,
                             fontFamily = FontFamily.SansSerif
@@ -76,26 +77,21 @@ fun IntegratedPaytable(
                         
                         Box(
                             modifier = Modifier
-                                .width(70.dp)
+                                .weight(1f)
                                 .fillMaxHeight()
                                 .background(
                                     when {
-                                        index == 0 -> Color(0xFFCC0000) // Red for first column
-                                        isMaxBet -> Color(0xFFFFD700) // Gold for max bet
-                                        else -> Color(0xFF0000AA) // Darker blue for others
+                                        isCurrentBetColumn -> Color(0xFFCC0000) // Red for current bet
+                                        else -> Color(0xFF000066) // Blue for others
                                     }
-                                )
-,
+                                ),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = payout.toString(),
-                                fontSize = 18.sp,
+                                fontSize = 20.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = when {
-                                    isMaxBet -> Color.Black
-                                    else -> Color.White
-                                },
+                                color = Color.Yellow,
                                 fontFamily = FontFamily.SansSerif,
                                 textAlign = TextAlign.Center
                             )
