@@ -136,13 +136,13 @@ private fun PayoutCountAnimation(
         val duration = 1500L
         val steps = 30
         val stepDelay = duration / steps
-        val stepAmount = targetPayout / steps
+        val stepAmount = maxOf(1, targetPayout / steps) // Ensure at least 1 to avoid showing 0
         
         for (i in 1..steps) {
             displayAmount = (stepAmount * i).coerceAtMost(targetPayout)
             delay(stepDelay)
         }
-        displayAmount = targetPayout
+        displayAmount = targetPayout // Ensure we show the exact final amount
     }
     
     Box(
