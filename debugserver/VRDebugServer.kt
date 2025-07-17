@@ -1,6 +1,6 @@
 package vr.debugserver
 
-import com.gallery.artbrowser.utils.FileLogger
+import com.meta.spatial.debugserver.utils.FileLogger
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonSyntaxException
@@ -375,12 +375,12 @@ class VRDebugServer(
     
     private fun handleDownloadLog(): Response {
         val logFiles = FileLogger.getLogFiles()
-        val mainLog = logFiles.find { it.name == "gallery_app_debug.log" }
+        val mainLog = logFiles.firstOrNull()
         
         return if (mainLog != null && mainLog.exists()) {
             val content = mainLog.readText()
             val response = newFixedLengthResponse(Response.Status.OK, "text/plain", content)
-            response.addHeader("Content-Disposition", "attachment; filename=\"gallery_app_debug.log\"")
+            response.addHeader("Content-Disposition", "attachment; filename=\"${mainLog.name}\"")
             response
         } else {
             createErrorResponse(Response.Status.NOT_FOUND, "Log file not found")
@@ -389,7 +389,7 @@ class VRDebugServer(
     
     private fun handleGetRecentLogs(): Response {
         val logFiles = FileLogger.getLogFiles()
-        val mainLog = logFiles.find { it.name == "gallery_app_debug.log" }
+        val mainLog = logFiles.firstOrNull()
         
         return if (mainLog != null && mainLog.exists()) {
             try {
@@ -535,6 +535,9 @@ class VRDebugServer(
         .log-level-INFO { color: #1976d2; }
         .log-level-DEBUG { color: #388e3c; }
         .log-level-VERBOSE { color: #757575; }
+        
+        /* Extension styles */
+        ${extensionRegistry.getAllWebUIStyles()}
     </style>
 </head>
 <body>
@@ -618,7 +621,8 @@ class VRDebugServer(
         <div class="control-group">
             <h2>App Specific Actions</h2>
             <div id="app-specific-content">
-                <p style="color: #666; font-style: italic;">App-specific actions will appear here when implemented</p>
+                ${extensionRegistry.getAllWebUIContent()}
+                <p style="color: #666; font-style: italic;">App-specific actions will appear here when extensions are registered</p>
             </div>
         </div>
     </div>
@@ -663,17 +667,16 @@ class VRDebugServer(
                 <strong>DELETE /api/objects/{id}</strong> - Delete spawned object by ID<br>
             </div>
             
-            <h3>Gallery-Specific API</h3>
+            <h3>Extension API</h3>
             <div style="margin-bottom: 20px;">
-                <strong>GET /api/app/gallery/paintings</strong> - List all paintings with positions and artwork info<br>
-                <strong>POST /api/app/gallery/trigger-painting/{id}</strong> - Trigger painting click (opens gallery browser)<br>
+                <strong>GET /api/app/{namespace}/{endpoint}</strong> - App-specific extension endpoints<br>
                 <div style="margin-left: 20px; color: #666; font-size: 12px;">
-                    • ID 1: Right Painting - "Wheat Field with Cypresses" by Vincent van Gogh<br>
-                    • ID 2: Rear Painting - "Madame X" by John Singer Sargent<br>
-                    • ID 3: Left Painting - "Washington Crossing the Delaware" by Emanuel Leutze<br>
-                    • ID 4: Front Painting - "Self-Portrait with a Straw Hat" by Vincent van Gogh
+                    Extensions can register custom endpoints under their namespace.<br>
+                    See your app's debug extension documentation for available endpoints.
                 </div>
             </div>
+            
+            ${extensionRegistry.getAllApiDocumentation()}
             
             <h3>Logging API</h3>
             <div style="margin-bottom: 20px;">
@@ -693,7 +696,7 @@ class VRDebugServer(
             </div>
             
             <div style="margin-top: 20px; padding: 10px; background-color: #f0f0f0; border-radius: 4px;">
-                <strong>Base URL:</strong> http://192.168.1.194:8080<br>
+                <strong>Base URL:</strong> <span id="baseUrl">http://[quest-ip]:8080</span><br>
                 <strong>Content-Type:</strong> application/json (for POST requests)<br>
                 <strong>CORS:</strong> Enabled for web access
             </div>
@@ -705,6 +708,14 @@ class VRDebugServer(
         let isReady = false;
         let currentCameraYaw = 0;
         let clearTimestamp = null; // Track when logs were cleared
+        
+        // Update base URL display with current host
+        document.addEventListener('DOMContentLoaded', function() {
+            const baseUrl = document.getElementById('baseUrl');
+            if (baseUrl) {
+                baseUrl.textContent = window.location.protocol + '//' + window.location.host;
+            }
+        });
         
         async function log(message) {
             const logDiv = document.getElementById('log');
@@ -1411,6 +1422,9 @@ class VRDebugServer(
         refreshLogs();
         
         log('VR Debug Control loaded');
+        
+        // Extension JavaScript
+        ${extensionRegistry.getAllWebUIJavaScript()}
     </script>
 </body>
 </html>

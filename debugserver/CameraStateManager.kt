@@ -2,7 +2,7 @@ package vr.debugserver
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.gallery.artbrowser.utils.FileLogger
+import com.meta.spatial.debugserver.utils.FileLogger
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 

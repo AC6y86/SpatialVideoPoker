@@ -2,7 +2,7 @@ package vr.debugserver
 
 import android.content.Context
 import android.net.wifi.WifiManager
-import com.gallery.artbrowser.utils.FileLogger
+import com.meta.spatial.debugserver.utils.FileLogger
 import com.meta.spatial.core.Entity
 import com.meta.spatial.core.Query
 import com.meta.spatial.core.SystemBase
@@ -36,12 +36,19 @@ class VRDebugSystem private constructor(
                 return
             }
             
-            // Initialize FileLogger first
-            FileLogger.initialize(activity)
-            
             DebugServerConfiguration.updateConfig(configBlock)
+            val config = DebugServerConfiguration.getConfig()
+            
+            // Initialize FileLogger with configuration
+            FileLogger.initialize(
+                activity, 
+                config.appName, 
+                config.logFileName,
+                config.enableFileLogging
+            )
+            
             instance = VRDebugSystem(activity)
-            FileLogger.d(TAG, "VRDebugSystem initialized")
+            FileLogger.d(TAG, "VRDebugSystem initialized for app: ${config.appName}")
         }
         
         fun getInstance(): VRDebugSystem {

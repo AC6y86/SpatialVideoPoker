@@ -1,4 +1,4 @@
-package com.gallery.artbrowser.utils
+package com.meta.spatial.debugserver.utils
 
 import android.content.Context
 import android.util.Log
@@ -15,7 +15,7 @@ import java.util.concurrent.Executors
  */
 object FileLogger {
     private const val TAG = "FileLogger"
-    private const val LOG_FILE_NAME = "gallery_app_debug.log"
+    private const val DEFAULT_LOG_FILE_NAME = "spatial_app_debug.log"
     private const val MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
     private const val MAX_BACKUP_FILES = 3
     
@@ -23,8 +23,22 @@ object FileLogger {
     private var writer: PrintWriter? = null
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
+    private var logFileName: String = DEFAULT_LOG_FILE_NAME
+    private var isLoggingEnabled = true
     
-    fun initialize(context: Context) {
+    fun initialize(context: Context, appName: String = "SpatialApp", customLogFileName: String? = null, enableFileLogging: Boolean = true) {
+        isLoggingEnabled = enableFileLogging
+        logFileName = customLogFileName ?: "${appName.lowercase().replace(" ", "_")}_debug.log"
+        
+        if (!isLoggingEnabled) {
+            Log.d(TAG, "File logging disabled")
+            return
+        }
+        
+        initialize(context)
+    }
+    
+    private fun initialize(context: Context) {
         executor.execute {
             try {
                 val logDir = File(context.cacheDir, "logs")
@@ -32,7 +46,7 @@ object FileLogger {
                     logDir.mkdirs()
                 }
                 
-                logFile = File(logDir, LOG_FILE_NAME)
+                logFile = File(logDir, logFileName)
                 checkAndRotateLogFile()
                 
                 writer = PrintWriter(FileWriter(logFile, true), true)
@@ -48,32 +62,44 @@ object FileLogger {
     
     fun d(tag: String, message: String) {
         Log.d(tag, message)
-        writeLog("DEBUG", tag, message)
+        if (isLoggingEnabled) {
+            writeLog("DEBUG", tag, message)
+        }
     }
     
     fun i(tag: String, message: String) {
         Log.i(tag, message)
-        writeLog("INFO", tag, message)
+        if (isLoggingEnabled) {
+            writeLog("INFO", tag, message)
+        }
     }
     
     fun w(tag: String, message: String) {
         Log.w(tag, message)
-        writeLog("WARN", tag, message)
+        if (isLoggingEnabled) {
+            writeLog("WARN", tag, message)
+        }
     }
     
     fun e(tag: String, message: String, throwable: Throwable? = null) {
         if (throwable != null) {
             Log.e(tag, message, throwable)
-            writeLog("ERROR", tag, message, throwable)
+            if (isLoggingEnabled) {
+                writeLog("ERROR", tag, message, throwable)
+            }
         } else {
             Log.e(tag, message)
-            writeLog("ERROR", tag, message)
+            if (isLoggingEnabled) {
+                writeLog("ERROR", tag, message)
+            }
         }
     }
     
     fun v(tag: String, message: String) {
         Log.v(tag, message)
-        writeLog("VERBOSE", tag, message)
+        if (isLoggingEnabled) {
+            writeLog("VERBOSE", tag, message)
+        }
     }
     
     /**
@@ -107,8 +133,8 @@ object FileLogger {
             if (file.exists() && file.length() > MAX_FILE_SIZE) {
                 // Rotate log files
                 for (i in MAX_BACKUP_FILES downTo 1) {
-                    val oldFile = File(file.parentFile, "${LOG_FILE_NAME}.$i")
-                    val newFile = File(file.parentFile, "${LOG_FILE_NAME}.${i + 1}")
+                    val oldFile = File(file.parentFile, "${logFileName}.$i")
+                    val newFile = File(file.parentFile, "${logFileName}.${i + 1}")
                     if (oldFile.exists()) {
                         if (i == MAX_BACKUP_FILES) {
                             oldFile.delete()
@@ -119,7 +145,7 @@ object FileLogger {
                 }
                 
                 // Rename current log to .1
-                file.renameTo(File(file.parentFile, "${LOG_FILE_NAME}.1"))
+                file.renameTo(File(file.parentFile, "${logFileName}.1"))
             }
         }
     }
@@ -128,7 +154,7 @@ object FileLogger {
         val logFiles = mutableListOf<File>()
         logFile?.parentFile?.let { dir ->
             dir.listFiles { file -> 
-                file.name.startsWith(LOG_FILE_NAME)
+                file.name.startsWith(logFileName.substringBeforeLast('.'))
             }?.let { files ->
                 logFiles.addAll(files)
             }

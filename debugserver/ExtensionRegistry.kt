@@ -1,6 +1,6 @@
 package vr.debugserver
 
-import com.gallery.artbrowser.utils.FileLogger
+import com.meta.spatial.debugserver.utils.FileLogger
 import fi.iki.elonen.NanoHTTPD
 
 /**
@@ -29,6 +29,12 @@ class ExtensionRegistry {
     fun registerExtension(extension: AppDebugExtension) {
         val namespace = extension.namespace
         
+        // Validate extension
+        if (!isValidNamespace(namespace)) {
+            FileLogger.e(TAG, "Invalid namespace '$namespace': must contain only lowercase letters, numbers, and hyphens")
+            return
+        }
+        
         if (extensions.containsKey(namespace)) {
             FileLogger.w(TAG, "Extension with namespace '$namespace' already registered, replacing")
         }
@@ -36,9 +42,22 @@ class ExtensionRegistry {
         extensions[namespace] = extension
         
         // Initialize the extension if debug system is ready
-        debugSystem?.let { extension.initialize(it) }
-        
-        FileLogger.d(TAG, "Registered extension: $namespace")
+        debugSystem?.let { 
+            try {
+                extension.initialize(it)
+                FileLogger.d(TAG, "Registered extension: ${extension.displayName} v${extension.version} (namespace: $namespace)")
+            } catch (e: Exception) {
+                FileLogger.e(TAG, "Failed to initialize extension '$namespace'", e)
+                extensions.remove(namespace)
+            }
+        }
+    }
+    
+    /**
+     * Validate namespace format
+     */
+    private fun isValidNamespace(namespace: String): Boolean {
+        return namespace.matches(Regex("^[a-z0-9-]+$")) && namespace.isNotEmpty()
     }
     
     /**
@@ -89,6 +108,23 @@ class ExtensionRegistry {
      * Get all registered extension namespaces
      */
     fun getRegisteredNamespaces(): Set<String> = extensions.keys.toSet()
+    
+    /**
+     * Get extension metadata
+     */
+    fun getExtensionMetadata(): Map<String, Map<String, String>> {
+        val metadata = mutableMapOf<String, Map<String, String>>()
+        
+        extensions.forEach { (namespace, extension) ->
+            metadata[namespace] = mapOf(
+                "displayName" to extension.displayName,
+                "version" to extension.version,
+                "namespace" to extension.namespace
+            )
+        }
+        
+        return metadata
+    }
     
     /**
      * Get app status from all registered extensions
@@ -149,6 +185,48 @@ class ExtensionRegistry {
         }
         
         return js.toString()
+    }
+    
+    /**
+     * Get web UI CSS from all registered extensions
+     */
+    fun getAllWebUIStyles(): String {
+        val css = StringBuilder()
+        
+        extensions.forEach { (namespace, extension) ->
+            try {
+                extension.getWebUIStyles()?.let { cssContent ->
+                    css.append("/* Extension: $namespace */\n")
+                    css.append(cssContent)
+                    css.append("\n")
+                }
+            } catch (e: Exception) {
+                FileLogger.e(TAG, "Error getting web UI styles from extension '$namespace'", e)
+            }
+        }
+        
+        return css.toString()
+    }
+    
+    /**
+     * Get API documentation from all registered extensions
+     */
+    fun getAllApiDocumentation(): String {
+        val docs = StringBuilder()
+        
+        extensions.forEach { (namespace, extension) ->
+            try {
+                extension.getApiDocumentation()?.let { docContent ->
+                    docs.append("<h4>Extension: ${extension.displayName} (${extension.namespace})</h4>\n")
+                    docs.append(docContent)
+                    docs.append("\n")
+                }
+            } catch (e: Exception) {
+                FileLogger.e(TAG, "Error getting API documentation from extension '$namespace'", e)
+            }
+        }
+        
+        return docs.toString()
     }
     
     /**

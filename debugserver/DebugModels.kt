@@ -180,28 +180,16 @@ data class AppState(
 // Configuration
 
 data class DebugServerConfig(
+    val appName: String = "SpatialApp",
     val port: Int = 8080,
     val enableWebUI: Boolean = true,
     val authToken: String? = null,
     val maxRequestSize: Long = 10 * 1024 * 1024, // 10MB
-    val allowedOrigins: List<String> = listOf("*")
+    val allowedOrigins: List<String> = listOf("*"),
+    val logFileName: String? = null, // Auto-generated from appName if null
+    val enableFileLogging: Boolean = true
 )
 
-// Gallery extension models
-
-data class TriggerPaintingRequest(
-    val paintingId: Int
-)
-
-data class PaintingInfo(
-    val id: Int,
-    val title: String,
-    val artist: String,
-    val isVisible: Boolean,
-    val position: Position3D? = null
-)
-
-data class PaintingsListResponse(
-    val paintings: List<PaintingInfo>
-)
+// App-specific extension models can be defined in project packages
+// Example: com.yourapp.debug.models.*
 

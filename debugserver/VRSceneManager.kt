@@ -1,6 +1,6 @@
 package vr.debugserver
 
-import com.gallery.artbrowser.utils.FileLogger
+import com.meta.spatial.debugserver.utils.FileLogger
 import com.meta.spatial.core.Entity
 import com.meta.spatial.core.Pose
 import com.meta.spatial.core.Quaternion

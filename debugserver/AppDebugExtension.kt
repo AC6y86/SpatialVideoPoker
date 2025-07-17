@@ -9,10 +9,20 @@ import fi.iki.elonen.NanoHTTPD
 interface AppDebugExtension {
     
     /**
-     * The namespace for this extension's endpoints (e.g., "gallery", "game", etc.)
+     * The namespace for this extension's endpoints (e.g., "poker", "game", etc.)
      * All endpoints will be prefixed with /api/app/{namespace}/
      */
     val namespace: String
+    
+    /**
+     * Display name for this extension shown in the web UI
+     */
+    val displayName: String
+    
+    /**
+     * Version of this extension
+     */
+    val version: String
     
     /**
      * Initialize the extension with access to the debug system components
@@ -45,6 +55,18 @@ interface AppDebugExtension {
      * @return JavaScript string for custom functionality, or null if no custom JS
      */
     fun getWebUIJavaScript(): String?
+    
+    /**
+     * Get CSS styles for app-specific web UI components
+     * @return CSS string for custom styles, or null if no custom CSS
+     */
+    fun getWebUIStyles(): String?
+    
+    /**
+     * Get API documentation for this extension's endpoints
+     * @return HTML documentation string, or null if no documentation
+     */
+    fun getApiDocumentation(): String?
     
     /**
      * Clean up resources when the extension is being destroyed
