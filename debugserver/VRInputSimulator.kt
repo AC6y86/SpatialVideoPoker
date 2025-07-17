@@ -166,10 +166,10 @@ class VRInputSimulator(
             val currentPosition = currentPose.t
             val currentRotationEuler = quaternionToEuler(currentPose.q)
             
-            // Add rotation deltas to current rotation
-            val newPitch = currentRotationEuler.pitch + request.pitch
-            val newYaw = normalizeYaw(currentRotationEuler.yaw + request.yaw)
-            val newRoll = currentRotationEuler.roll + request.roll
+            // Add rotation deltas to current rotation (fix coordinate mapping)
+            val newPitch = currentRotationEuler.pitch + request.yaw    // User's YAW input controls PITCH (left/right turn)
+            val newYaw = normalizeYaw(currentRotationEuler.yaw + request.roll)    // User's ROLL input controls YAW (tilt)
+            val newRoll = currentRotationEuler.roll - request.pitch   // User's PITCH input controls ROLL (up/down look, negated)
             
             FileLogger.d(TAG, "Current rotation: pitch=${currentRotationEuler.pitch}°, yaw=${currentRotationEuler.yaw}°, roll=${currentRotationEuler.roll}°")
             FileLogger.d(TAG, "New rotation: pitch=${newPitch}°, yaw=${newYaw}°, roll=${newRoll}°")

@@ -80,6 +80,7 @@ class VRDebugServer(
             }
             uri == "/api/scene/info" && method == Method.GET -> handleSceneInfo()
             uri == "/api/camera/rotate" && method == Method.POST -> handleCameraRotate(session)
+            uri == "/api/camera/test-rotation" && method == Method.POST -> handleCameraTestRotation(session)
             uri == "/api/camera/position" && method == Method.POST -> handleCameraPosition(session)
             uri == "/api/camera/test-virtual-pose" && method == Method.POST -> handleTestVirtualCameraPose()
             uri == "/api/camera/save" && method == Method.POST -> handleCameraSave(session)
@@ -145,6 +146,25 @@ class VRDebugServer(
             }
         } catch (e: Exception) {
             createErrorResponse(Response.Status.INTERNAL_ERROR, "Failed to rotate camera: ${e.message}")
+        }
+    }
+    
+    private fun handleCameraTestRotation(session: IHTTPSession): Response {
+        val request = parseJsonBody<CameraRotateRequest>(session) ?: return createErrorResponse(
+            Response.Status.BAD_REQUEST, "Invalid request body"
+        )
+        
+        FileLogger.d(TAG, "TEST ROTATION: pitch=${request.pitch}°, yaw=${request.yaw}°, roll=${request.roll}°")
+        
+        return try {
+            val success = runBlocking { inputSimulator.rotateCamera(request) }
+            if (success) {
+                createJsonResponse(SuccessResponse(message = "Test rotation applied: pitch=${request.pitch}°, yaw=${request.yaw}°, roll=${request.roll}°"))
+            } else {
+                createErrorResponse(Response.Status.INTERNAL_ERROR, "Failed to apply test rotation")
+            }
+        } catch (e: Exception) {
+            createErrorResponse(Response.Status.INTERNAL_ERROR, "Failed to apply test rotation: ${e.message}")
         }
     }
     
@@ -606,13 +626,13 @@ class VRDebugServer(
             <h2>Camera Position Controls (0.1 step)</h2>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; width: 200px; margin: 0 auto 20px auto;">
                 <div></div>
-                <button onclick="adjustPosition(0, 0.1, 0)" style="padding: 8px;">↑ +Y</button>
+                <button onclick="adjustPosition(0, 0, -0.1)" style="padding: 8px;">⬆ -Z</button>
                 <div></div>
-                <button onclick="adjustPosition(-0.1, 0, 0)" style="padding: 8px;">← -X</button>
+                <button onclick="adjustPosition(0.1, 0, 0)" style="padding: 8px;">← +X</button>
+                <button onclick="adjustPosition(0, 0, 0.1)" style="padding: 8px;">⬇ +Z</button>
+                <button onclick="adjustPosition(-0.1, 0, 0)" style="padding: 8px;">→ -X</button>
+                <button onclick="adjustPosition(0, 0.1, 0)" style="padding: 8px;">↑ +Y</button>
                 <button onclick="adjustPosition(0, -0.1, 0)" style="padding: 8px;">↓ -Y</button>
-                <button onclick="adjustPosition(0.1, 0, 0)" style="padding: 8px;">→ +X</button>
-                <button onclick="adjustPosition(0, 0, -0.1)" style="padding: 8px;">⬆ +Z</button>
-                <button onclick="adjustPosition(0, 0, 0.1)" style="padding: 8px;">⬇ -Z</button>
                 <div></div>
             </div>
             <div style="text-align: center;">
@@ -626,15 +646,27 @@ class VRDebugServer(
                 <div></div>
                 <button onclick="adjustRotation(5, 0, 0)" style="padding: 8px;">↑ +Pitch</button>
                 <div></div>
-                <button onclick="adjustRotation(0, -5, 0)" style="padding: 8px;">← -Yaw</button>
+                <button onclick="adjustRotation(0, 5, 0)" style="padding: 8px;">← -Yaw</button>
                 <button onclick="adjustRotation(-5, 0, 0)" style="padding: 8px;">↓ -Pitch</button>
-                <button onclick="adjustRotation(0, 5, 0)" style="padding: 8px;">→ +Yaw</button>
-                <button onclick="adjustRotation(0, 0, -5)" style="padding: 8px;">⟲ -Roll</button>
-                <button onclick="adjustRotation(0, 0, 5)" style="padding: 8px;">⟳ +Roll</button>
+                <button onclick="adjustRotation(0, -5, 0)" style="padding: 8px;">→ +Yaw</button>
+                <button onclick="adjustRotation(0, 0, 5)" style="padding: 8px;">⟲ -Roll</button>
+                <button onclick="adjustRotation(0, 0, -5)" style="padding: 8px;">⟳ +Roll</button>
                 <div></div>
             </div>
             <div style="text-align: center;">
                 <button onclick="resetCameraRotation()" style="background-color: #f44336; color: white; padding: 8px 16px;">Reset Rotation</button>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h2>ROTATION TESTS (15° steps)</h2>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px; justify-content: center;">
+                <button onclick="testRotation(15, 0, 0)" style="background-color: #4CAF50; color: white; padding: 10px 20px;">TEST PITCH +15°</button>
+                <button onclick="testRotation(0, 15, 0)" style="background-color: #2196F3; color: white; padding: 10px 20px;">TEST YAW +15°</button>
+                <button onclick="testRotation(0, 0, 15)" style="background-color: #FF9800; color: white; padding: 10px 20px;">TEST ROLL +15°</button>
+            </div>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <button onclick="resetCameraRotation()" style="background-color: #f44336; color: white; padding: 8px 16px;">Reset Before Each Test</button>
             </div>
         </div>
         
@@ -1059,6 +1091,22 @@ class VRDebugServer(
             const afterState = await apiCall('/api/scene/info');
             if (afterState && afterState.camera) {
                 log(`After rotation: position=(${'$'}{afterState.camera.position.x.toFixed(2)}, ${'$'}{afterState.camera.position.y.toFixed(2)}, ${'$'}{afterState.camera.position.z.toFixed(2)}), yaw=${'$'}{afterState.camera.rotation.yaw.toFixed(2)}°`);
+            }
+        }
+        
+        async function testRotation(pitch, yaw, roll) {
+            log('🧪 TESTING ROTATION: pitch=' + pitch + '°, yaw=' + yaw + '°, roll=' + roll + '° - What does this do?');
+            
+            try {
+                const response = await apiCall('/api/camera/test-rotation', 'POST', { pitch, yaw, roll });
+                if (response) {
+                    log('✅ Test completed: ' + (response.message || 'Success'));
+                    await updateCameraState();
+                } else {
+                    log('❌ Test failed');
+                }
+            } catch (error) {
+                log('❌ Test error: ' + error);
             }
         }
         
