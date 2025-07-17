@@ -732,6 +732,7 @@ class VRDebugServer(
         let currentCameraYaw = 0;
         let clearTimestamp = null; // Track when logs were cleared
         let lastDisplayedTimestamp = null; // Track the most recent log timestamp displayed
+        let displayedLogEntries = new Set(); // Track displayed log entries to prevent duplicates
         
         // Update base URL display with current host
         document.addEventListener('DOMContentLoaded', function() {
@@ -780,14 +781,22 @@ class VRDebugServer(
                 const logDiv = document.getElementById('log');
                 
                 if (data.logs && data.logs.length > 0) {
-                    // Filter logs to only show new ones (after the last displayed timestamp)
+                    // Filter logs to only show new ones that haven't been displayed yet
                     const newLogs = data.logs.filter(logEntry => {
-                        // If we have a filter timestamp, only show logs newer than that
-                        if (filterTimestamp) {
-                            return logEntry.timestamp > filterTimestamp;
+                        // Create a unique key for this log entry
+                        const logKey = logEntry.timestamp + '_' + logEntry.level + '_' + logEntry.tag + '_' + logEntry.message;
+                        
+                        // Check if we've already displayed this exact log entry
+                        if (displayedLogEntries.has(logKey)) {
+                            return false; // Skip this duplicate
                         }
-                        // If no filter timestamp, show all logs (first load)
-                        return true;
+                        
+                        // If we have a filter timestamp, also check that
+                        if (filterTimestamp && logEntry.timestamp <= filterTimestamp) {
+                            return false; // Skip logs older than filter
+                        }
+                        
+                        return true; // This is a new log entry
                     });
                     
                     // Only update the display if we have new logs to show
@@ -810,6 +819,10 @@ class VRDebugServer(
                         
                         // Add only the new log entries
                         newLogs.forEach(logEntry => {
+                            // Add to displayed set to prevent future duplicates
+                            const logKey = logEntry.timestamp + '_' + logEntry.level + '_' + logEntry.tag + '_' + logEntry.message;
+                            displayedLogEntries.add(logKey);
+                            
                             const levelClass = 'log-level-' + logEntry.level;
                             const logLine = '<div class="' + levelClass + '">[' + logEntry.timestamp + '] ' + logEntry.level + '/' + logEntry.tag + ': ' + logEntry.message + '</div>';
                             logDiv.innerHTML += logLine;
@@ -873,6 +886,9 @@ class VRDebugServer(
                 // Reset the last displayed timestamp to prevent showing old logs
                 lastDisplayedTimestamp = clearTimestamp;
                 
+                // Clear the displayed entries set since we're starting fresh
+                displayedLogEntries.clear();
+                
             } catch (error) {
                 console.error('Error fetching logs for clear timestamp:', error);
                 // Clear anyway even if we couldn't get the timestamp
@@ -882,6 +898,7 @@ class VRDebugServer(
                 // Reset tracking variables
                 lastDisplayedTimestamp = null;
                 clearTimestamp = null;
+                displayedLogEntries.clear();
             }
         }
         

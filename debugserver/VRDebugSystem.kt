@@ -111,17 +111,9 @@ class VRDebugSystem private constructor(
             controllers = 2
         )
         
-        // Load start position if set
-        coroutineScope.launch {
-            try {
-                delay(500) // Small delay to ensure scene is fully ready
-                if (inputSimulator?.loadStartPositionIfSet() == true) {
-                    FileLogger.i(TAG, "Start position loaded successfully")
-                }
-            } catch (e: Exception) {
-                FileLogger.e(TAG, "Failed to load start position", e)
-            }
-        }
+        // Note: Automatic start position loading removed to prevent interference with manual camera loads
+        // Start position can still be loaded manually via the web UI if needed
+        FileLogger.d(TAG, "Automatic start position loading disabled to prevent camera load conflicts")
         
         // Notify all registered webhooks
         coroutineScope.launch {
