@@ -5,6 +5,10 @@
     <!-- Hand tracking permissions -->
     <uses-permission android:name="com.oculus.permission.HAND_TRACKING" />
     <uses-feature android:name="oculus.software.handtracking" android:required="false" />
+    
+    <!-- Network permissions for debug server -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application>
         <meta-data android:name="com.oculus.supportedDevices" 

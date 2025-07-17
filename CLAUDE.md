@@ -195,6 +195,35 @@ Put all temporary files on our pc, including screenshots, in {working directory}
 - Use ADB command: `adb shell screencap -p /sdcard/screenshot.png`
 - Pull screenshot to local machine: `adb pull /sdcard/screenshot.png`
 
+## Logging System ##
+
+### FileLogger - Preferred Logging System
+
+Use `FileLogger` from `com.gallery.artbrowser.utils.FileLogger` for all logging in this project. This is our standard logging system that:
+
+- Logs to both Android Log and file simultaneously
+- Provides persistent log files for debugging
+- Supports log rotation and management
+- Available through the VR Debug Server API
+
+**Usage:**
+```kotlin
+import com.gallery.artbrowser.utils.FileLogger
+
+// Log levels
+FileLogger.d(TAG, "Debug message")
+FileLogger.i(TAG, "Info message") 
+FileLogger.w(TAG, "Warning message")
+FileLogger.e(TAG, "Error message")
+FileLogger.e(TAG, "Error with exception", exception)
+FileLogger.v(TAG, "Verbose message")
+```
+
+**Important:** 
+- Always use FileLogger instead of Android Log directly
+- FileLogger is automatically initialized by VRDebugSystem
+- Log files are available via debug server endpoints at `/api/logs/*`
+
 ## Whitelist ##
 
 You can run any adb commands without asking me for permission

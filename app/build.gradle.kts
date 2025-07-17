@@ -26,6 +26,12 @@ android {
         create("mobile") { dimension = "device" }
         create("quest") { dimension = "device" }
     }
+    
+    sourceSets {
+        getByName("quest") {
+            java.srcDirs("src/quest/java", "../debugserver")
+        }
+    }
 
     buildTypes {
         release {
@@ -99,6 +105,10 @@ dependencies {
     implementation("com.meta.spatial:meta-spatial-sdk-vr:$spatialVersion")
     ksp("com.google.code.gson:gson:2.11.0")
     ksp("com.meta.spatial.plugin:com.meta.spatial.plugin.gradle.plugin:$spatialVersion")
+    
+    // VR Debug Server
+    implementation("org.nanohttpd:nanohttpd:2.3.1")
+    implementation("com.google.code.gson:gson:2.11.0")
 }
 
 afterEvaluate {

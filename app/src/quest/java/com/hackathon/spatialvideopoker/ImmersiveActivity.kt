@@ -2,6 +2,7 @@ package com.hackathon.spatialvideopoker
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Bundle
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -13,6 +14,7 @@ import com.meta.spatial.core.Vector3
 import com.meta.spatial.runtime.*
 import com.meta.spatial.toolkit.*
 import com.meta.spatial.vr.VRFeature
+import vr.debugserver.VRDebugSystem
 
 class ImmersiveActivity : AppSystemActivity() {
     
@@ -20,9 +22,23 @@ class ImmersiveActivity : AppSystemActivity() {
     
     override fun registerFeatures() = listOf(VRFeature(this))
     
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        // Initialize debug server (only in debug builds)
+        if (BuildConfig.DEBUG) {
+            VRDebugSystem.initialize(this)
+        }
+    }
+    
     override fun onSceneReady() {
         super.onSceneReady()
         scene.setViewOrigin(0.0f, 0.0f, 0.0f)
+        
+        // Register the debug system
+        if (BuildConfig.DEBUG) {
+            systemManager.registerSystem(VRDebugSystem.getInstance())
+        }
         
         activityScope.launch {
             glXFManager.inflateGLXF(
@@ -47,6 +63,24 @@ class ImmersiveActivity : AppSystemActivity() {
         }
         
         scene.updateIBLEnvironment("chromatic.env")
+    }
+    
+    override fun onVRReady() {
+        super.onVRReady()
+        
+        // Notify that the app is fully ready
+        if (BuildConfig.DEBUG) {
+            VRDebugSystem.getInstance().notifyAppReady()
+        }
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        
+        // Clean up
+        if (BuildConfig.DEBUG) {
+            VRDebugSystem.shutdown()
+        }
     }
     
     override fun registerPanels() = listOf(
