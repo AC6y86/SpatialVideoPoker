@@ -31,9 +31,13 @@ class ImmersiveActivity : AppSystemActivity() {
             
             // Delay panel creation to ensure registration is complete
             kotlinx.coroutines.delay(100)
+            
+            // Position panel on top face of the cube
+            // Cube position: (-0.044, 0.327, 0.068) with scale (3.33, 1, 4.37)
+            val cubeTopY = 0.327f + (1f * 0.5f) // cube center Y + half height
             Entity.createPanelEntity(
                 R.id.panel_main,
-                Transform(Pose(Vector3(0f, 1.3f, 2f), Quaternion(0f, 0f, 0f)))
+                Transform(Pose(Vector3(-0.044f, cubeTopY, 0.068f), Quaternion(0f, 0f, 0f)))
             )
         }
         
@@ -46,8 +50,10 @@ class ImmersiveActivity : AppSystemActivity() {
                 setClassName(applicationContext, MainActivity::class.qualifiedName!!)
             }
             config {
-                width = 3.84f
-                height = 2.16f
+                // Scale panel to fit on cube top surface (3.33 x 4.37)
+                // Use 80% of cube dimensions to leave some margin
+                width = 3.0f    // 80% of cube width (3.33)
+                height = 1.69f  // Maintain 16:9 aspect ratio
                 layoutWidthInPx = 1920
                 layoutHeightInPx = 1080
                 layerConfig = LayerConfig()
