@@ -34,10 +34,15 @@ class ImmersiveActivity : AppSystemActivity() {
             
             // Position panel on top face of the cube
             // Cube position: (-0.044, 0.327, 0.068) with scale (3.33, 1, 4.37)
-            val cubeTopY = 0.327f + (1f * 0.5f) // cube center Y + half height
+            val cubeTopY = 0.327f + (1f * 0.5f) + 0.01f // cube center Y + half height + small offset
+            
+            // Rotate panel to lie flat on top of cube (facing upward)
+            // 90 degrees pitch rotation to make panel horizontal
+            val horizontalRotation = Quaternion(pitch = 90f, yaw = 0f, roll = 0f)
+            
             Entity.createPanelEntity(
                 R.id.panel_main,
-                Transform(Pose(Vector3(-0.044f, cubeTopY, 0.068f), Quaternion(0f, 0f, 0f)))
+                Transform(Pose(Vector3(-0.044f, cubeTopY, 0.068f), horizontalRotation))
             )
         }
         
