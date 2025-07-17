@@ -88,6 +88,7 @@ class VRDebugServer(
             uri.startsWith("/api/camera/saved/") && method == Method.DELETE -> handleCameraDelete(session)
             uri == "/api/camera/start-position" && method == Method.POST -> handleSetStartPosition(session)
             uri == "/api/camera/start-position" && method == Method.DELETE -> handleClearStartPosition()
+            uri == "/api/camera/unlock" && method == Method.POST -> handleCameraUnlock()
             uri == "/api/controller/point" && method == Method.POST -> handleControllerPoint(session)
             uri == "/api/controller/move" && method == Method.POST -> handleControllerMove(session)
             uri == "/api/input/trigger" && method == Method.POST -> handleTrigger(session)
@@ -326,6 +327,14 @@ class VRDebugServer(
             createJsonResponse(SuccessResponse(message = "Start position cleared"))
         } else {
             createErrorResponse(Response.Status.INTERNAL_ERROR, "Failed to clear start position")
+        }
+    }
+    
+    private fun handleCameraUnlock(): Response {
+        return if (inputSimulator.disableCameraLock()) {
+            createJsonResponse(SuccessResponse(message = "Camera unlocked - VR tracking restored"))
+        } else {
+            createErrorResponse(Response.Status.INTERNAL_ERROR, "Failed to unlock camera")
         }
     }
     
@@ -594,6 +603,42 @@ class VRDebugServer(
         
         
         <div class="control-group">
+            <h2>Camera Position Controls (0.1 step)</h2>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; width: 200px; margin: 0 auto 20px auto;">
+                <div></div>
+                <button onclick="adjustPosition(0, 0.1, 0)" style="padding: 8px;">↑ +Y</button>
+                <div></div>
+                <button onclick="adjustPosition(-0.1, 0, 0)" style="padding: 8px;">← -X</button>
+                <button onclick="adjustPosition(0, -0.1, 0)" style="padding: 8px;">↓ -Y</button>
+                <button onclick="adjustPosition(0.1, 0, 0)" style="padding: 8px;">→ +X</button>
+                <button onclick="adjustPosition(0, 0, -0.1)" style="padding: 8px;">⬆ +Z</button>
+                <button onclick="adjustPosition(0, 0, 0.1)" style="padding: 8px;">⬇ -Z</button>
+                <div></div>
+            </div>
+            <div style="text-align: center;">
+                <button onclick="resetCameraPosition()" style="background-color: #f44336; color: white; padding: 8px 16px;">Reset Position</button>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h2>Camera Rotation Controls (5° step)</h2>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; width: 250px; margin: 0 auto 20px auto;">
+                <div></div>
+                <button onclick="adjustRotation(5, 0, 0)" style="padding: 8px;">↑ +Pitch</button>
+                <div></div>
+                <button onclick="adjustRotation(0, -5, 0)" style="padding: 8px;">← -Yaw</button>
+                <button onclick="adjustRotation(-5, 0, 0)" style="padding: 8px;">↓ -Pitch</button>
+                <button onclick="adjustRotation(0, 5, 0)" style="padding: 8px;">→ +Yaw</button>
+                <button onclick="adjustRotation(0, 0, -5)" style="padding: 8px;">⟲ -Roll</button>
+                <button onclick="adjustRotation(0, 0, 5)" style="padding: 8px;">⟳ +Roll</button>
+                <div></div>
+            </div>
+            <div style="text-align: center;">
+                <button onclick="resetCameraRotation()" style="background-color: #f44336; color: white; padding: 8px 16px;">Reset Rotation</button>
+            </div>
+        </div>
+        
+        <div class="control-group">
             <h2>Debug Actions</h2>
             <button onclick="logCameraPosition()">Log Camera Position</button>
         </div>
@@ -604,16 +649,28 @@ class VRDebugServer(
                 <input type="text" id="savePositionName" placeholder="Position name" style="flex: 1; padding: 8px;">
                 <button onclick="saveCurrentPosition()">Save Current</button>
             </div>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <select id="savedPositionsList" style="flex: 1; padding: 8px;">
-                    <option value="">Select saved position...</option>
-                </select>
-                <button onclick="loadSelectedPosition()">Load</button>
-                <button onclick="deleteSelectedPosition()">Delete</button>
-                <button onclick="refreshSavedPositions()">Refresh</button>
+            <div style="margin-bottom: 10px;">
+                <button onclick="refreshSavedPositions()" style="margin-bottom: 10px;">Refresh Positions</button>
             </div>
+            <table id="savedPositionsTable" style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
+                <thead>
+                    <tr style="background-color: #f5f5f5;">
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Name</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Position</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Rotation</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="savedPositionsTableBody">
+                    <tr>
+                        <td colspan="4" style="border: 1px solid #ddd; padding: 8px; text-align: center; font-style: italic; color: #666;">
+                            No saved positions found
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
             <div style="display: flex; gap: 10px; margin-top: 10px; align-items: center;">
-                <button onclick="setAsStartPosition()" style="background-color: #ff9800;">Set as Start Position</button>
+                <button onclick="unlockCamera()" style="background-color: #e91e63; color: white;">Unlock Camera</button>
                 <button onclick="clearStartPosition()" style="background-color: #f44336;">Clear Start Position</button>
                 <span id="startPositionLabel" style="margin-left: 10px; font-style: italic; color: #666;"></span>
             </div>
@@ -733,6 +790,10 @@ class VRDebugServer(
         let clearTimestamp = null; // Track when logs were cleared
         let lastDisplayedTimestamp = null; // Track the most recent log timestamp displayed
         let displayedLogEntries = new Set(); // Track displayed log entries to prevent duplicates
+        
+        // Track current camera position and rotation internally
+        let currentCameraPosition = { x: 0, y: 0, z: 0 };
+        let currentCameraRotation = { pitch: 0, yaw: 0, roll: 0 };
         
         // Update base URL display with current host
         document.addEventListener('DOMContentLoaded', function() {
@@ -1138,19 +1199,30 @@ class VRDebugServer(
             }
         }
         
-        async function loadSelectedPosition() {
-            const select = document.getElementById('savedPositionsList');
-            const name = select.value;
-            
-            if (!name) {
-                log('Please select a position to load');
-                return;
-            }
-            
+        // New table-based position functions
+        async function loadPosition(name) {
             try {
                 const response = await apiCall(`/api/camera/load/${'$'}{name}`, 'POST');
                 if (response) {
                     log(`Position loaded: ${'$'}{name}`);
+                    
+                    // Get the loaded position and update our internal tracking
+                    const savedPositions = await apiCall('/api/camera/saved');
+                    if (savedPositions && savedPositions.positions && savedPositions.positions[name]) {
+                        const loadedPos = savedPositions.positions[name];
+                        currentCameraPosition = {
+                            x: loadedPos.position.x,
+                            y: loadedPos.position.y,
+                            z: loadedPos.position.z
+                        };
+                        currentCameraRotation = {
+                            pitch: loadedPos.rotation.pitch,
+                            yaw: loadedPos.rotation.yaw,
+                            roll: loadedPos.rotation.roll
+                        };
+                        log('Internal tracking updated: pos=(' + currentCameraPosition.x.toFixed(3) + ', ' + currentCameraPosition.y.toFixed(3) + ', ' + currentCameraPosition.z.toFixed(3) + '), rot=(' + currentCameraRotation.pitch.toFixed(1) + '°, ' + currentCameraRotation.yaw.toFixed(1) + '°, ' + currentCameraRotation.roll.toFixed(1) + '°)');
+                    }
+                    
                     // Update camera state after loading
                     await updateCameraState();
                 }
@@ -1159,23 +1231,11 @@ class VRDebugServer(
             }
         }
         
-        async function deleteSelectedPosition() {
-            const select = document.getElementById('savedPositionsList');
-            const name = select.value;
-            
-            if (!name) {
-                log('Please select a position to delete');
-                return;
-            }
-            
-            if (!confirm(`Are you sure you want to delete position: ${'$'}{name}?`)) {
-                return;
-            }
-            
+        async function deletePosition(name) {
             try {
-                const response = await apiCall(`/api/camera/saved/${'$'}{name}`, 'DELETE');
+                const response = await apiCall('/api/camera/saved/' + name, 'DELETE');
                 if (response) {
-                    log(`Position deleted: ${'$'}{name}`);
+                    log('Position deleted: ' + name);
                     await refreshSavedPositions();
                 }
             } catch (error) {
@@ -1183,37 +1243,84 @@ class VRDebugServer(
             }
         }
         
+        async function setPositionAsDefault(name) {
+            try {
+                const response = await apiCall('/api/camera/start-position', 'POST', { name: name });
+                if (response) {
+                    log(`Start position set to: ${'$'}{name}`);
+                    await refreshSavedPositions(); // Refresh to show star indicator
+                }
+            } catch (error) {
+                log('Error setting start position: ' + error);
+            }
+        }
+        
         async function refreshSavedPositions() {
             try {
                 const response = await apiCall('/api/camera/saved', 'GET');
-                const select = document.getElementById('savedPositionsList');
+                const tableBody = document.getElementById('savedPositionsTableBody');
                 
-                // Clear existing options except the first one
-                while (select.children.length > 1) {
-                    select.removeChild(select.lastChild);
-                }
+                // Clear existing rows
+                tableBody.innerHTML = '';
                 
                 if (response && response.positions) {
                     // Sort positions by name
                     const sortedPositions = Object.entries(response.positions)
                         .sort(([a], [b]) => a.localeCompare(b));
                     
-                    sortedPositions.forEach(([name, state]) => {
-                        const option = document.createElement('option');
-                        option.value = name;
-                        option.textContent = `${'$'}{name} (x:${'$'}{state.position.x.toFixed(1)}, y:${'$'}{state.position.y.toFixed(1)}, z:${'$'}{state.position.z.toFixed(1)}, yaw:${'$'}{state.rotation.yaw.toFixed(1)}°)`;
-                        select.appendChild(option);
-                    });
+                    if (sortedPositions.length === 0) {
+                        // Show "no positions" message
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td colspan="4" style="border: 1px solid #ddd; padding: 8px; text-align: center; font-style: italic; color: #666;">
+                                No saved positions found
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    } else {
+                        sortedPositions.forEach(([name, state]) => {
+                            const row = document.createElement('tr');
+                            const isStartPosition = response.startPosition === name;
+                            const startIndicator = isStartPosition ? ' ⭐' : '';
+                            
+                            row.innerHTML = 
+                                '<td style="border: 1px solid #ddd; padding: 8px;">' + name + startIndicator + '</td>' +
+                                '<td style="border: 1px solid #ddd; padding: 8px;">' +
+                                    'x: ' + state.position.x.toFixed(2) + '<br>' +
+                                    'y: ' + state.position.y.toFixed(2) + '<br>' +
+                                    'z: ' + state.position.z.toFixed(2) +
+                                '</td>' +
+                                '<td style="border: 1px solid #ddd; padding: 8px;">' +
+                                    'pitch: ' + state.rotation.pitch.toFixed(1) + '°<br>' +
+                                    'yaw: ' + state.rotation.yaw.toFixed(1) + '°<br>' +
+                                    'roll: ' + state.rotation.roll.toFixed(1) + '°' +
+                                '</td>' +
+                                '<td style="border: 1px solid #ddd; padding: 4px; text-align: center;">' +
+                                    '<button onclick="loadPosition(\'' + name + '\')" style="margin: 2px; padding: 4px 8px; font-size: 12px;">Load</button><br>' +
+                                    '<button onclick="setPositionAsDefault(\'' + name + '\')" style="margin: 2px; padding: 4px 8px; font-size: 12px; background-color: #ff9800; color: white;">Set Default</button><br>' +
+                                    '<button onclick="deletePosition(\'' + name + '\')" style="margin: 2px; padding: 4px 8px; font-size: 12px; background-color: #f44336; color: white;">✕</button>' +
+                                '</td>';
+                            tableBody.appendChild(row);
+                        });
+                    }
                     
-                    log(`Loaded ${'$'}{sortedPositions.length} saved positions`);
+                    log('Loaded ' + sortedPositions.length + ' saved positions');
                     
                     // Update start position label
                     if (response.startPosition) {
-                        document.getElementById('startPositionLabel').textContent = `Start position: ${'$'}{response.startPosition}`;
+                        document.getElementById('startPositionLabel').textContent = 'Start position: ' + response.startPosition;
                     } else {
                         document.getElementById('startPositionLabel').textContent = 'No start position set';
                     }
                 } else {
+                    // Show "no positions" message
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td colspan="4" style="border: 1px solid #ddd; padding: 8px; text-align: center; font-style: italic; color: #666;">
+                            No saved positions found
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
                     log('No saved positions found');
                     document.getElementById('startPositionLabel').textContent = 'No start position set';
                 }
@@ -1223,26 +1330,6 @@ class VRDebugServer(
         }
         
         // Start Position Functions
-        
-        async function setAsStartPosition() {
-            const select = document.getElementById('savedPositionsList');
-            const name = select.value;
-            
-            if (!name) {
-                log('Please select a position to set as start position');
-                return;
-            }
-            
-            try {
-                const response = await apiCall('/api/camera/start-position', 'POST', { name: name });
-                if (response) {
-                    log(`Start position set to: ${'$'}{name}`);
-                    document.getElementById('startPositionLabel').textContent = `Start position: ${'$'}{name}`;
-                }
-            } catch (error) {
-                log('Error setting start position: ' + error);
-            }
-        }
         
         async function clearStartPosition() {
             if (!confirm('Are you sure you want to clear the start position?')) {
@@ -1254,9 +1341,114 @@ class VRDebugServer(
                 if (response) {
                     log('Start position cleared');
                     document.getElementById('startPositionLabel').textContent = 'No start position set';
+                    await refreshSavedPositions(); // Refresh to remove star indicators
                 }
             } catch (error) {
                 log('Error clearing start position: ' + error);
+            }
+        }
+
+        async function unlockCamera() {
+            try {
+                const response = await apiCall('/api/camera/unlock', 'POST');
+                if (response) {
+                    log('Camera unlocked - VR tracking restored');
+                }
+            } catch (error) {
+                log('Error unlocking camera: ' + error);
+            }
+        }
+        
+        async function resetCameraPosition() {
+            try {
+                const response = await apiCall('/api/camera/position', 'POST', { x: 0, y: 0, z: 0 });
+                if (response) {
+                    log('Camera position reset to origin (0, 0, 0)');
+                    await updateCameraState();
+                }
+            } catch (error) {
+                log('Error resetting camera position: ' + error);
+            }
+        }
+        
+        async function resetCameraRotation() {
+            try {
+                // Get current rotation to calculate reset values
+                const state = await apiCall('/api/scene/info');
+                if (state && state.camera) {
+                    const currentPitch = state.camera.rotation.pitch;
+                    const currentYaw = state.camera.rotation.yaw;
+                    const currentRoll = state.camera.rotation.roll;
+                    
+                    // Set rotation to zero by rotating by negative current values
+                    const response = await apiCall('/api/camera/rotate', 'POST', { 
+                        pitch: -currentPitch, 
+                        yaw: -currentYaw, 
+                        roll: -currentRoll 
+                    });
+                    if (response) {
+                        log('Camera rotation reset to (0°, 0°, 0°)');
+                        await updateCameraState();
+                    }
+                } else {
+                    log('Could not get current rotation for reset');
+                }
+            } catch (error) {
+                log('Error resetting camera rotation: ' + error);
+            }
+        }
+        
+        async function adjustPosition(deltaX, deltaY, deltaZ) {
+            try {
+                // Use internally tracked position as base
+                const newX = currentCameraPosition.x + deltaX;
+                const newY = currentCameraPosition.y + deltaY;
+                const newZ = currentCameraPosition.z + deltaZ;
+                
+                // Use direct position API
+                const posResponse = await apiCall('/api/camera/position', 'POST', {
+                    x: newX,
+                    y: newY, 
+                    z: newZ
+                });
+                
+                if (posResponse) {
+                    // Update internal tracking
+                    currentCameraPosition.x = newX;
+                    currentCameraPosition.y = newY;
+                    currentCameraPosition.z = newZ;
+                    
+                    log('Position adjusted by (' + deltaX + ', ' + deltaY + ', ' + deltaZ + ') from (' + (newX-deltaX).toFixed(3) + ', ' + (newY-deltaY).toFixed(3) + ', ' + (newZ-deltaZ).toFixed(3) + ') to (' + newX.toFixed(3) + ', ' + newY.toFixed(3) + ', ' + newZ.toFixed(3) + ')');
+                    await updateCameraState();
+                } else {
+                    log('Failed to adjust camera position');
+                }
+            } catch (error) {
+                log('Error adjusting position: ' + error);
+            }
+        }
+        
+        async function adjustRotation(deltaPitch, deltaYaw, deltaRoll) {
+            try {
+                // Update internal tracking first
+                currentCameraRotation.pitch += deltaPitch;
+                currentCameraRotation.yaw += deltaYaw;
+                currentCameraRotation.roll += deltaRoll;
+                
+                // Use the existing rotation API which adds to current rotation
+                const response = await apiCall('/api/camera/rotate', 'POST', { pitch: deltaPitch, yaw: deltaYaw, roll: deltaRoll });
+                if (response) {
+                    log('Rotation adjusted by (pitch=' + deltaPitch + '°, yaw=' + deltaYaw + '°, roll=' + deltaRoll + '°) to (pitch=' + currentCameraRotation.pitch.toFixed(1) + '°, yaw=' + currentCameraRotation.yaw.toFixed(1) + '°, roll=' + currentCameraRotation.roll.toFixed(1) + '°)');
+                    await updateCameraState();
+                } else {
+                    // Revert internal tracking if API call failed
+                    currentCameraRotation.pitch -= deltaPitch;
+                    currentCameraRotation.yaw -= deltaYaw;
+                    currentCameraRotation.roll -= deltaRoll;
+                    log('Failed to adjust camera rotation');
+                }
+            } catch (error) {
+                log('Error adjusting rotation: ' + error);
             }
         }
         

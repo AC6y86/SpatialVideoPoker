@@ -15,6 +15,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.PI
+import kotlin.math.atan2
+import kotlin.math.asin
+import kotlin.math.abs
+import kotlin.math.sign
 
 /**
  * Handles the simulation of VR input events and camera state persistence
@@ -33,32 +40,158 @@ class VRInputSimulator(
     private var cameraPosition = Position3D(0f, 0f, 0f) // Use 0 for LOCAL_FLOOR reference space
     private val cameraStateManager: CameraStateManager? = context?.let { CameraStateManager(it) }
     
+    /**
+     * Converts Euler angles (pitch, yaw, roll) in degrees to a Quaternion
+     * Uses ZYX rotation order (yaw, pitch, roll)
+     */
+    private fun eulerToQuaternion(pitch: Float, yaw: Float, roll: Float): Quaternion {
+        // Convert degrees to radians
+        val pitchRad = pitch * PI.toFloat() / 180f
+        val yawRad = yaw * PI.toFloat() / 180f
+        val rollRad = roll * PI.toFloat() / 180f
+        
+        // Calculate half angles
+        val cy = cos(yawRad * 0.5f)
+        val sy = sin(yawRad * 0.5f)
+        val cp = cos(pitchRad * 0.5f)
+        val sp = sin(pitchRad * 0.5f)
+        val cr = cos(rollRad * 0.5f)
+        val sr = sin(rollRad * 0.5f)
+        
+        // Calculate quaternion components (ZYX order)
+        val w = cr * cp * cy + sr * sp * sy
+        val x = sr * cp * cy - cr * sp * sy
+        val y = cr * sp * cy + sr * cp * sy
+        val z = cr * cp * sy - sr * sp * cy
+        
+        return Quaternion(w, x, y, z)
+    }
+    
+    /**
+     * Converts a Quaternion to Euler angles (pitch, yaw, roll) in degrees
+     * Uses ZYX rotation order (yaw, pitch, roll)
+     */
+    private fun quaternionToEuler(q: Quaternion): Rotation3D {
+        // Convert quaternion to Euler angles
+        val sinr_cosp = 2 * (q.w * q.x + q.y * q.z)
+        val cosr_cosp = 1 - 2 * (q.x * q.x + q.y * q.y)
+        val roll = kotlin.math.atan2(sinr_cosp, cosr_cosp)
+        
+        val sinp = 2 * (q.w * q.y - q.z * q.x)
+        val pitch = if (kotlin.math.abs(sinp) >= 1) {
+            kotlin.math.PI.toFloat() / 2 * kotlin.math.sign(sinp)
+        } else {
+            kotlin.math.asin(sinp)
+        }
+        
+        val siny_cosp = 2 * (q.w * q.z + q.x * q.y)
+        val cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z)
+        val yaw = kotlin.math.atan2(siny_cosp, cosy_cosp)
+        
+        // Convert radians to degrees
+        return Rotation3D(
+            pitch = pitch * 180f / PI.toFloat(),
+            yaw = yaw * 180f / PI.toFloat(),
+            roll = roll * 180f / PI.toFloat()
+        )
+    }
+    
     // Camera Control
     
-    fun rotateCamera(request: CameraRotateRequest): Boolean {
+    fun disableCameraLock(): Boolean {
+        return try {
+            scene.enableVirtualCamera(false)
+            FileLogger.d(TAG, "Virtual camera disabled - camera unlocked for VR tracking")
+            true
+        } catch (e: Exception) {
+            FileLogger.e(TAG, "Failed to disable virtual camera", e)
+            false
+        }
+    }
+    
+    suspend fun testVirtualCameraPose(): Boolean {
+        return try {
+            FileLogger.d(TAG, "Starting setVirtualCameraPose tests...")
+            
+            // Get current pose first
+            val initialPose = scene.getViewerPose()
+            FileLogger.d(TAG, "Initial pose: pos=(${initialPose.t.x}, ${initialPose.t.y}, ${initialPose.t.z}), quat=(${initialPose.q.w}, ${initialPose.q.x}, ${initialPose.q.y}, ${initialPose.q.z})")
+            
+            // Test 1: Identity pose (no rotation, origin position)
+            FileLogger.d(TAG, "Test 1: Identity pose")
+            val identityPose = Pose(Vector3(0f, 0f, 0f), Quaternion(1f, 0f, 0f, 0f))
+            scene.setVirtualCameraPose(identityPose)
+            delay(200)
+            val result1 = scene.getViewerPose()
+            FileLogger.d(TAG, "Test 1 result: pos=(${result1.t.x}, ${result1.t.y}, ${result1.t.z}), quat=(${result1.q.w}, ${result1.q.x}, ${result1.q.y}, ${result1.q.z})")
+            
+            // Test 2: Simple position change, no rotation
+            FileLogger.d(TAG, "Test 2: Simple position change")
+            val positionPose = Pose(Vector3(1f, 0f, 0f), Quaternion(1f, 0f, 0f, 0f))
+            scene.setVirtualCameraPose(positionPose)
+            delay(200)
+            val result2 = scene.getViewerPose()
+            FileLogger.d(TAG, "Test 2 result: pos=(${result2.t.x}, ${result2.t.y}, ${result2.t.z}), quat=(${result2.q.w}, ${result2.q.x}, ${result2.q.y}, ${result2.q.z})")
+            
+            // Test 3: Simple rotation, no position change
+            FileLogger.d(TAG, "Test 3: Simple rotation")
+            val rotationPose = Pose(Vector3(0f, 0f, 0f), Quaternion(0.707f, 0f, 0.707f, 0f)) // 90 degree Y rotation
+            scene.setVirtualCameraPose(rotationPose)
+            delay(200)
+            val result3 = scene.getViewerPose()
+            FileLogger.d(TAG, "Test 3 result: pos=(${result3.t.x}, ${result3.t.y}, ${result3.t.z}), quat=(${result3.q.w}, ${result3.q.x}, ${result3.q.y}, ${result3.q.z})")
+            
+            // Test 4: Try the current scene's pose (should be no-op)
+            FileLogger.d(TAG, "Test 4: Current scene pose")
+            scene.setVirtualCameraPose(result3)
+            delay(200)
+            val result4 = scene.getViewerPose()
+            FileLogger.d(TAG, "Test 4 result: pos=(${result4.t.x}, ${result4.t.y}, ${result4.t.z}), quat=(${result4.q.w}, ${result4.q.x}, ${result4.q.y}, ${result4.q.z})")
+            
+            FileLogger.d(TAG, "setVirtualCameraPose tests completed")
+            true
+        } catch (e: Exception) {
+            FileLogger.e(TAG, "Error in setVirtualCameraPose tests", e)
+            false
+        }
+    }
+    
+    suspend fun rotateCamera(request: CameraRotateRequest): Boolean {
         return try {
             FileLogger.d(TAG, "Rotating camera by: pitch=${request.pitch}°, yaw=${request.yaw}°, roll=${request.roll}°")
             
-            // Add rotation to current values
-            var newYaw = cameraRotation.yaw + request.yaw
+            // Get current actual position and rotation from scene
+            scene.enableVirtualCamera(true)
+            val currentPose = scene.getViewerPose()
+            val currentPosition = currentPose.t
+            val currentRotationEuler = quaternionToEuler(currentPose.q)
             
-            // Normalize yaw to -180 to 180 range for better behavior
-            newYaw = normalizeYaw(newYaw)
+            // Add rotation deltas to current rotation
+            val newPitch = currentRotationEuler.pitch + request.pitch
+            val newYaw = normalizeYaw(currentRotationEuler.yaw + request.yaw)
+            val newRoll = currentRotationEuler.roll + request.roll
             
-            cameraRotation = Rotation3D(
-                pitch = cameraRotation.pitch + request.pitch,
-                yaw = newYaw,
-                roll = cameraRotation.roll + request.roll
-            )
+            FileLogger.d(TAG, "Current rotation: pitch=${currentRotationEuler.pitch}°, yaw=${currentRotationEuler.yaw}°, roll=${currentRotationEuler.roll}°")
+            FileLogger.d(TAG, "New rotation: pitch=${newPitch}°, yaw=${newYaw}°, roll=${newRoll}°")
             
-            FileLogger.d(TAG, "Normalized yaw from ${cameraRotation.yaw - request.yaw}° to $newYaw°")
+            // Apply new rotation while preserving current position
+            val newQuaternion = eulerToQuaternion(newPitch, newYaw, newRoll)
+            val pose = Pose(currentPosition, newQuaternion)
+            scene.setVirtualCameraPose(pose)
             
-            updateCameraView()
+            FileLogger.d(TAG, "Applied rotation setVirtualCameraPose: pos=(${currentPosition.x}, ${currentPosition.y}, ${currentPosition.z}), quat=(${newQuaternion.w}, ${newQuaternion.x}, ${newQuaternion.y}, ${newQuaternion.z})")
             
-            // Get and log the actual rotation after update
+            // Allow SDK time to process the camera change
+            delay(100)
+            
+            // Update internal tracking to match what we applied
+            cameraPosition = Position3D(currentPosition.x, currentPosition.y, currentPosition.z)
+            cameraRotation = Rotation3D(newPitch, newYaw, newRoll)
+            
+            // Get and log the actual state after update
             val actualYaw = scene.getViewSceneRotation()
             val actualPos = scene.getViewOrigin()
-            FileLogger.d(TAG, "Camera after rotation: position=(${actualPos.x}, ${actualPos.y}, ${actualPos.z}), yaw=$actualYaw° (requested total yaw=${cameraRotation.yaw}°)")
+            FileLogger.d(TAG, "Camera after rotation: actual_pos=(${actualPos.x}, ${actualPos.y}, ${actualPos.z}), actual_yaw=$actualYaw° (requested yaw=${newYaw}°)")
             true
         } catch (e: Exception) {
             FileLogger.e(TAG, "Failed to rotate camera", e)
@@ -66,50 +199,53 @@ class VRInputSimulator(
         }
     }
     
-    private fun updateCameraView(updateRotation: Boolean = true) {
-        // Scene.setViewOrigin only supports yaw rotation in current SDK version
-        // Unfortunately, we cannot directly apply pitch rotation
-        // We'll track it for debugging/logging purposes
-        
+    private suspend fun updateCameraView(updateRotation: Boolean = true) {
+        // Use setVirtualCameraPose for camera control (full 6DOF)
+        scene.enableVirtualCamera(true)
         if (updateRotation) {
-            // Update both position and rotation
-            scene.setViewOrigin(
-                cameraPosition.x,
-                cameraPosition.y,
-                cameraPosition.z,
-                cameraRotation.yaw
-            )
+            // Update both position and full rotation
+            FileLogger.d(TAG, "Setting camera - pos=(${cameraPosition.x}, ${cameraPosition.y}, ${cameraPosition.z}), euler=(pitch=${cameraRotation.pitch}°, yaw=${cameraRotation.yaw}°, roll=${cameraRotation.roll}°)")
+            val quaternion = eulerToQuaternion(cameraRotation.pitch, cameraRotation.yaw, cameraRotation.roll)
+            val pose = Pose(Vector3(cameraPosition.x, cameraPosition.y, cameraPosition.z), quaternion)
+            scene.setVirtualCameraPose(pose)
+            FileLogger.d(TAG, "Applied setVirtualCameraPose: pos=(${cameraPosition.x}, ${cameraPosition.y}, ${cameraPosition.z}), quat=(${quaternion.w}, ${quaternion.x}, ${quaternion.y}, ${quaternion.z})")
         } else {
-            // Update position only (3-parameter version)
-            scene.setViewOrigin(
-                cameraPosition.x,
-                cameraPosition.y,
-                cameraPosition.z
-            )
+            // Update position only (preserve current rotation by getting current pose)
+            FileLogger.d(TAG, "Setting camera position only - pos=(${cameraPosition.x}, ${cameraPosition.y}, ${cameraPosition.z})")
+            val currentPose = scene.getViewerPose()
+            val pose = Pose(Vector3(cameraPosition.x, cameraPosition.y, cameraPosition.z), currentPose.q)
+            scene.setVirtualCameraPose(pose)
+            FileLogger.d(TAG, "Applied position-only setVirtualCameraPose: pos=(${cameraPosition.x}, ${cameraPosition.y}, ${cameraPosition.z}), preserved_quat=(${currentPose.q.w}, ${currentPose.q.x}, ${currentPose.q.y}, ${currentPose.q.z})")
         }
+        
+        // Allow SDK time to process the camera change
+        delay(100)
+        
+        // Keep virtual camera enabled - user can manually unlock with button if needed
+        FileLogger.d(TAG, "Virtual camera remains enabled - use Unlock Camera button to restore VR tracking")
         
         // Get actual position and rotation from scene after update
         val actualPosition = scene.getViewOrigin()
         val actualYaw = scene.getViewSceneRotation()
         
-        FileLogger.d(TAG, "Camera updated - position: (${actualPosition.x}, ${actualPosition.y}, ${actualPosition.z}), rotation: $actualYaw°, updateType: ${if (updateRotation) "position+rotation" else "position-only"}")
+        FileLogger.d(TAG, "Camera updated - actual_pos=(${actualPosition.x}, ${actualPosition.y}, ${actualPosition.z}), actual_yaw=${actualYaw}°, updateType: ${if (updateRotation) "position+rotation" else "position-only"}")
     }
     
-    fun setCameraPosition(request: CameraPositionRequest): Boolean {
+    suspend fun setCameraPosition(request: CameraPositionRequest): Boolean {
         return try {
             cameraPosition = Position3D(request.x, request.y, request.z)
             
-            // Only reset rotation if this is explicitly a reset position request (0,0,0)
-            // Otherwise preserve the current rotation
-            if (request.x == 0f && request.y == 0f && request.z == 0f) {
-                // This is a reset request - don't change rotation
-                // Let the web UI handle rotation reset separately
-            }
-            
             FileLogger.d(TAG, "Setting camera position to: (${request.x}, ${request.y}, ${request.z})")
             
-            // Update the camera view with position only (don't update rotation)
-            updateCameraView(updateRotation = false)
+            // For position-only updates, preserve current rotation by getting current pose
+            scene.enableVirtualCamera(true)
+            val currentPose = scene.getViewerPose()
+            val pose = Pose(Vector3(cameraPosition.x, cameraPosition.y, cameraPosition.z), currentPose.q)
+            scene.setVirtualCameraPose(pose)
+            FileLogger.d(TAG, "Applied position-only setVirtualCameraPose: pos=(${cameraPosition.x}, ${cameraPosition.y}, ${cameraPosition.z}), preserved_quat=(${currentPose.q.w}, ${currentPose.q.x}, ${currentPose.q.y}, ${currentPose.q.z})")
+            
+            // Allow SDK time to process the camera change
+            delay(100)
             
             // Get and log the actual position after update
             val actualPos = scene.getViewOrigin()
@@ -130,13 +266,18 @@ class VRInputSimulator(
                 return false
             }
             
-            // Get current actual state from scene
-            val actualPosition = scene.getViewOrigin()
-            val actualYaw = scene.getViewSceneRotation()
+            // Get current actual pose from scene (full 6DOF)
+            val actualPose = scene.getViewerPose()
+            val actualPosition = actualPose.t
+            val actualRotation = quaternionToEuler(actualPose.q)
             
-            // Update our tracked values to match scene state
+            // Log comparison between internal state and scene state
+            FileLogger.d(TAG, "Saving camera position '${request.name}' - Scene pose: pos=(${actualPosition.x}, ${actualPosition.y}, ${actualPosition.z}), euler=(${actualRotation.pitch}, ${actualRotation.yaw}, ${actualRotation.roll}), quat=(${actualPose.q.w}, ${actualPose.q.x}, ${actualPose.q.y}, ${actualPose.q.z})")
+            FileLogger.d(TAG, "Saving camera position '${request.name}' - Internal state: pos=(${cameraPosition.x}, ${cameraPosition.y}, ${cameraPosition.z}), euler=(${cameraRotation.pitch}, ${cameraRotation.yaw}, ${cameraRotation.roll})")
+            
+            // Update our tracked state to match actual scene state
             cameraPosition = Position3D(actualPosition.x, actualPosition.y, actualPosition.z)
-            cameraRotation = Rotation3D(cameraRotation.pitch, actualYaw, cameraRotation.roll)
+            cameraRotation = actualRotation
             
             // Save the current position and rotation
             val success = cameraStateManager.savePosition(
@@ -146,7 +287,7 @@ class VRInputSimulator(
             )
             
             if (success) {
-                FileLogger.d(TAG, "Successfully saved camera position '${request.name}': pos=(${cameraPosition.x}, ${cameraPosition.y}, ${cameraPosition.z}), yaw=${cameraRotation.yaw}°")
+                FileLogger.d(TAG, "Successfully saved camera position '${request.name}': pos=(${cameraPosition.x}, ${cameraPosition.y}, ${cameraPosition.z}), euler=(pitch=${cameraRotation.pitch}°, yaw=${cameraRotation.yaw}°, roll=${cameraRotation.roll}°)")
             }
             
             success
@@ -156,7 +297,7 @@ class VRInputSimulator(
         }
     }
     
-    fun loadCameraPosition(request: CameraLoadRequest): Boolean {
+    suspend fun loadCameraPosition(request: CameraLoadRequest): Boolean {
         return try {
             if (cameraStateManager == null) {
                 FileLogger.w(TAG, "Camera state manager not available - context not provided")
@@ -173,19 +314,27 @@ class VRInputSimulator(
             cameraPosition = savedState.position
             cameraRotation = savedState.rotation
             
-            // Apply to scene using 4-parameter version since we need both position and rotation
-            scene.setViewOrigin(
-                cameraPosition.x,
-                cameraPosition.y,
-                cameraPosition.z,
-                cameraRotation.yaw
-            )
+            // Apply to scene using setVirtualCameraPose (full 6DOF)
+            FileLogger.d(TAG, "Loading camera position '${request.name}' - pos=(${cameraPosition.x}, ${cameraPosition.y}, ${cameraPosition.z}), euler=(pitch=${cameraRotation.pitch}°, yaw=${cameraRotation.yaw}°, roll=${cameraRotation.roll}°)")
+            
+            // Enable virtual camera and set full pose
+            scene.enableVirtualCamera(true)
+            val quaternion = eulerToQuaternion(cameraRotation.pitch, cameraRotation.yaw, cameraRotation.roll)
+            val pose = Pose(Vector3(cameraPosition.x, cameraPosition.y, cameraPosition.z), quaternion)
+            scene.setVirtualCameraPose(pose)
+            FileLogger.d(TAG, "Applied setVirtualCameraPose: pos=(${cameraPosition.x}, ${cameraPosition.y}, ${cameraPosition.z}), quat=(${quaternion.w}, ${quaternion.x}, ${quaternion.y}, ${quaternion.z})")
+            
+            // Allow SDK time to process the camera change
+            delay(100)
+            
+            // Keep virtual camera enabled - user can manually unlock with button if needed
+            FileLogger.d(TAG, "Virtual camera remains enabled - use Unlock Camera button to restore VR tracking")
             
             // Verify the actual state after update
             val actualPosition = scene.getViewOrigin()
             val actualYaw = scene.getViewSceneRotation()
             
-            FileLogger.d(TAG, "Successfully loaded camera position '${request.name}': pos=(${actualPosition.x}, ${actualPosition.y}, ${actualPosition.z}), yaw=${actualYaw}°")
+            FileLogger.d(TAG, "Successfully loaded camera position '${request.name}': actual_pos=(${actualPosition.x}, ${actualPosition.y}, ${actualPosition.z}), actual_yaw=${actualYaw}°")
             
             true
         } catch (e: Exception) {
@@ -267,7 +416,7 @@ class VRInputSimulator(
         }
     }
     
-    fun loadStartPositionIfSet(): Boolean {
+    suspend fun loadStartPositionIfSet(): Boolean {
         return try {
             if (cameraStateManager == null) {
                 FileLogger.w(TAG, "Camera state manager not available - context not provided")
@@ -280,15 +429,26 @@ class VRInputSimulator(
                 cameraPosition = startPosition.position
                 cameraRotation = startPosition.rotation
                 
-                // Apply to scene using 4-parameter version since we need both position and rotation
-                scene.setViewOrigin(
-                    cameraPosition.x,
-                    cameraPosition.y,
-                    cameraPosition.z,
-                    cameraRotation.yaw
-                )
+                // Apply to scene using setVirtualCameraPose (full 6DOF)
+                FileLogger.d(TAG, "Loading start position - pos=(${cameraPosition.x}, ${cameraPosition.y}, ${cameraPosition.z}), euler=(pitch=${cameraRotation.pitch}°, yaw=${cameraRotation.yaw}°, roll=${cameraRotation.roll}°)")
                 
-                FileLogger.d(TAG, "Successfully loaded start position: pos=(${cameraPosition.x}, ${cameraPosition.y}, ${cameraPosition.z}), yaw=${cameraRotation.yaw}°")
+                scene.enableVirtualCamera(true)
+                val quaternion = eulerToQuaternion(cameraRotation.pitch, cameraRotation.yaw, cameraRotation.roll)
+                val pose = Pose(Vector3(cameraPosition.x, cameraPosition.y, cameraPosition.z), quaternion)
+                scene.setVirtualCameraPose(pose)
+                FileLogger.d(TAG, "Applied start position setVirtualCameraPose: pos=(${cameraPosition.x}, ${cameraPosition.y}, ${cameraPosition.z}), quat=(${quaternion.w}, ${quaternion.x}, ${quaternion.y}, ${quaternion.z})")
+                
+                // Allow SDK time to process the camera change
+                delay(100)
+                
+                // Keep virtual camera enabled - user can manually unlock with button if needed
+                FileLogger.d(TAG, "Virtual camera remains enabled - use Unlock Camera button to restore VR tracking")
+                
+                // Verify the actual state after update
+                val actualPosition = scene.getViewOrigin()
+                val actualYaw = scene.getViewSceneRotation()
+                
+                FileLogger.d(TAG, "Successfully loaded start position: actual_pos=(${actualPosition.x}, ${actualPosition.y}, ${actualPosition.z}), actual_yaw=${actualYaw}°")
                 true
             } else {
                 FileLogger.d(TAG, "No start position set")
