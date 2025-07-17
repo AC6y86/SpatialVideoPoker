@@ -97,7 +97,7 @@ class VRDebugServer(
             uri == "/api/logs" && method == Method.GET -> handleGetLogFiles()
             uri == "/api/logs/clear" && method == Method.POST -> handleClearLogFiles()
             uri == "/api/logs/download" && method == Method.GET -> handleDownloadLog()
-            uri == "/api/logs/recent" && method == Method.GET -> handleGetRecentLogs()
+            uri == "/api/logs/recent" && method == Method.GET -> handleGetRecentLogs(session)
             uri == "/api/time" && method == Method.GET -> handleGetTime()
             else -> createErrorResponse(Response.Status.NOT_FOUND, "Endpoint not found: $uri")
         }
@@ -387,23 +387,26 @@ class VRDebugServer(
         }
     }
     
-    private fun handleGetRecentLogs(): Response {
+    private fun handleGetRecentLogs(session: IHTTPSession): Response {
         val logFiles = FileLogger.getLogFiles()
         val mainLog = logFiles.firstOrNull()
+        
+        // Get the 'since' parameter from query parameters
+        val sinceParam = session.parms["since"]
         
         return if (mainLog != null && mainLog.exists()) {
             try {
                 val lines = mainLog.readLines()
                 // Get last 50 lines
                 val recentLines = lines.takeLast(50)
-                val logData = recentLines.map { line ->
+                val logData = recentLines.mapNotNull { line ->
                     // Parse log format: "2024-01-01 12:00:00.000 LEVEL/TAG: message"
                     val parts = line.split(" ", limit = 3)
                     if (parts.size >= 3) {
                         val timestamp = "${parts[0]} ${parts[1]}"
                         val levelAndTag = parts[2]
                         val colonIndex = levelAndTag.indexOf(": ")
-                        if (colonIndex > 0) {
+                        val logEntry = if (colonIndex > 0) {
                             val levelTag = levelAndTag.substring(0, colonIndex)
                             val message = levelAndTag.substring(colonIndex + 2)
                             val slashIndex = levelTag.indexOf("/")
@@ -432,13 +435,28 @@ class VRDebugServer(
                                 "message" to line
                             )
                         }
+                        
+                        // Filter based on 'since' parameter if provided
+                        if (sinceParam != null && timestamp.isNotEmpty()) {
+                            // Compare timestamps as strings since they're in format "YYYY-MM-DD HH:mm:ss.SSS"
+                            if (timestamp.compareTo(sinceParam) > 0) {
+                                logEntry
+                            } else {
+                                null
+                            }
+                        } else {
+                            logEntry
+                        }
                     } else {
-                        mapOf(
+                        // Handle malformed log lines
+                        val logEntry = mapOf(
                             "timestamp" to "",
                             "level" to "INFO",
                             "tag" to "Unknown", 
                             "message" to line
                         )
+                        // Only include if no 'since' filter or if timestamp is empty (malformed)
+                        if (sinceParam == null) logEntry else null
                     }
                 }
                 createJsonResponse(mapOf("logs" to logData))
@@ -544,31 +562,6 @@ class VRDebugServer(
     <div class="container">
         <h1>VR Debug Control <span id="status" class="status not-ready"></span></h1>
         
-        <div style="display: flex; gap: 40px; justify-content: center;">
-            <div class="control-group" style="flex: 1;">
-                <h2>Camera Rotation</h2>
-                <div class="arrow-controls" style="grid-template-columns: repeat(3, 80px); grid-template-rows: 40px;">
-                    <button onclick="rotateCamera(0, -15, 0)">←</button>
-                    <button onclick="resetRotation()">●</button>
-                    <button onclick="rotateCamera(0, 15, 0)">→</button>
-                </div>
-            </div>
-            
-            <div class="control-group" style="flex: 1;">
-                <h2>Player Position</h2>
-                <div class="arrow-controls">
-                    <div></div>
-                    <button onclick="movePlayer(0, 0, -0.5)">↑</button>
-                    <div></div>
-                    <button onclick="movePlayer(-0.5, 0, 0)">←</button>
-                    <button onclick="resetPosition()">●</button>
-                    <button onclick="movePlayer(0.5, 0, 0)">→</button>
-                    <div></div>
-                    <button onclick="movePlayer(0, 0, 0.5)">↓</button>
-                    <div></div>
-                </div>
-            </div>
-        </div>
         
         <div class="control-group">
             <h2>Debug Actions</h2>
