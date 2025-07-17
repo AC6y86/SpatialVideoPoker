@@ -7,6 +7,7 @@ import com.google.gson.JsonSyntaxException
 import fi.iki.elonen.NanoHTTPD
 import java.io.IOException
 import java.io.File
+import kotlinx.coroutines.runBlocking
 
 /**
  * HTTP server that handles REST API requests for VR input simulation
@@ -80,6 +81,7 @@ class VRDebugServer(
             uri == "/api/scene/info" && method == Method.GET -> handleSceneInfo()
             uri == "/api/camera/rotate" && method == Method.POST -> handleCameraRotate(session)
             uri == "/api/camera/position" && method == Method.POST -> handleCameraPosition(session)
+            uri == "/api/camera/test-virtual-pose" && method == Method.POST -> handleTestVirtualCameraPose()
             uri == "/api/camera/save" && method == Method.POST -> handleCameraSave(session)
             uri == "/api/camera/saved" && method == Method.GET -> handleCameraSavedList()
             uri.startsWith("/api/camera/load/") && method == Method.POST -> handleCameraLoad(session)
@@ -133,10 +135,15 @@ class VRDebugServer(
             Response.Status.BAD_REQUEST, "Invalid request body"
         )
         
-        return if (inputSimulator.rotateCamera(request)) {
-            createJsonResponse(SuccessResponse(message = "Camera rotated"))
-        } else {
-            createErrorResponse(Response.Status.INTERNAL_ERROR, "Failed to rotate camera")
+        return try {
+            val success = runBlocking { inputSimulator.rotateCamera(request) }
+            if (success) {
+                createJsonResponse(SuccessResponse(message = "Camera rotated"))
+            } else {
+                createErrorResponse(Response.Status.INTERNAL_ERROR, "Failed to rotate camera")
+            }
+        } catch (e: Exception) {
+            createErrorResponse(Response.Status.INTERNAL_ERROR, "Failed to rotate camera: ${e.message}")
         }
     }
     
@@ -145,10 +152,28 @@ class VRDebugServer(
             Response.Status.BAD_REQUEST, "Invalid request body"
         )
         
-        return if (inputSimulator.setCameraPosition(request)) {
-            createJsonResponse(SuccessResponse(message = "Camera position set"))
-        } else {
-            createErrorResponse(Response.Status.INTERNAL_ERROR, "Failed to set camera position")
+        return try {
+            val success = runBlocking { inputSimulator.setCameraPosition(request) }
+            if (success) {
+                createJsonResponse(SuccessResponse(message = "Camera position set"))
+            } else {
+                createErrorResponse(Response.Status.INTERNAL_ERROR, "Failed to set camera position")
+            }
+        } catch (e: Exception) {
+            createErrorResponse(Response.Status.INTERNAL_ERROR, "Failed to set camera position: ${e.message}")
+        }
+    }
+    
+    private fun handleTestVirtualCameraPose(): Response {
+        return try {
+            val success = runBlocking { inputSimulator.testVirtualCameraPose() }
+            if (success) {
+                createJsonResponse(SuccessResponse(message = "Virtual camera pose tests completed"))
+            } else {
+                createErrorResponse(Response.Status.INTERNAL_ERROR, "Virtual camera pose tests failed")
+            }
+        } catch (e: Exception) {
+            createErrorResponse(Response.Status.INTERNAL_ERROR, "Virtual camera pose tests failed: ${e.message}")
         }
     }
     
@@ -253,10 +278,15 @@ class VRDebugServer(
         }
         
         val request = CameraLoadRequest(name)
-        return if (inputSimulator.loadCameraPosition(request)) {
-            createJsonResponse(SuccessResponse(message = "Camera position '${name}' loaded"))
-        } else {
-            createErrorResponse(Response.Status.NOT_FOUND, "Camera position '${name}' not found")
+        return try {
+            val success = runBlocking { inputSimulator.loadCameraPosition(request) }
+            if (success) {
+                createJsonResponse(SuccessResponse(message = "Camera position '${name}' loaded"))
+            } else {
+                createErrorResponse(Response.Status.NOT_FOUND, "Camera position '${name}' not found")
+            }
+        } catch (e: Exception) {
+            createErrorResponse(Response.Status.INTERNAL_ERROR, "Failed to load camera position: ${e.message}")
         }
     }
     
@@ -701,6 +731,7 @@ class VRDebugServer(
         let isReady = false;
         let currentCameraYaw = 0;
         let clearTimestamp = null; // Track when logs were cleared
+        let lastDisplayedTimestamp = null; // Track the most recent log timestamp displayed
         
         // Update base URL display with current host
         document.addEventListener('DOMContentLoaded', function() {
@@ -737,8 +768,10 @@ class VRDebugServer(
         
         async function refreshAppLogs() {
             try {
-                const url = clearTimestamp 
-                    ? API_BASE + '/api/logs/recent?since=' + encodeURIComponent(clearTimestamp)
+                // Use the most recent displayed timestamp or clearTimestamp for filtering
+                const filterTimestamp = clearTimestamp || lastDisplayedTimestamp;
+                const url = filterTimestamp 
+                    ? API_BASE + '/api/logs/recent?since=' + encodeURIComponent(filterTimestamp)
                     : API_BASE + '/api/logs/recent';
                 
                 const response = await fetch(url);
@@ -747,20 +780,23 @@ class VRDebugServer(
                 const logDiv = document.getElementById('log');
                 
                 if (data.logs && data.logs.length > 0) {
-                    // Filter logs based on clearTimestamp if set
-                    const filteredLogs = clearTimestamp 
-                        ? data.logs.filter(logEntry => {
-                            // Direct string comparison since both are in same format: "YYYY-MM-DD HH:mm:ss.SSS"
-                            return logEntry.timestamp > clearTimestamp;
-                          })
-                        : data.logs;
+                    // Filter logs to only show new ones (after the last displayed timestamp)
+                    const newLogs = data.logs.filter(logEntry => {
+                        // If we have a filter timestamp, only show logs newer than that
+                        if (filterTimestamp) {
+                            return logEntry.timestamp > filterTimestamp;
+                        }
+                        // If no filter timestamp, show all logs (first load)
+                        return true;
+                    });
                     
-                    // Only update the display if we have logs to show
-                    if (filteredLogs.length > 0) {
-                        // Filter ALL existing content (including web UI logs) based on clearTimestamp
+                    // Only update the display if we have new logs to show
+                    if (newLogs.length > 0) {
+                        // If clearTimestamp is set, we need to rebuild the display
                         if (clearTimestamp) {
-                            const allLines = logDiv.innerHTML.split('<br>');
-                            const filteredWebUILogs = allLines.filter(line => {
+                            // Filter existing web UI logs based on clearTimestamp
+                            const existingLines = logDiv.innerHTML.split('<br>');
+                            const filteredExistingLogs = existingLines.filter(line => {
                                 if (!line.trim()) return false;
                                 // Extract timestamp from format: [YYYY-MM-DD HH:mm:ss.SSS] message
                                 const timestampMatch = line.match(/\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})\]/);
@@ -769,23 +805,25 @@ class VRDebugServer(
                                 }
                                 return false; // Remove lines without timestamps
                             });
-                            logDiv.innerHTML = filteredWebUILogs.join('<br>');
+                            logDiv.innerHTML = filteredExistingLogs.join('<br>');
                         }
                         
-                        // Add Log entries
-                        filteredLogs.forEach(logEntry => {
+                        // Add only the new log entries
+                        newLogs.forEach(logEntry => {
                             const levelClass = 'log-level-' + logEntry.level;
                             const logLine = '<div class="' + levelClass + '">[' + logEntry.timestamp + '] ' + logEntry.level + '/' + logEntry.tag + ': ' + logEntry.message + '</div>';
                             logDiv.innerHTML += logLine;
                         });
                         
+                        // Update the last displayed timestamp to the most recent new log
+                        if (newLogs.length > 0) {
+                            lastDisplayedTimestamp = newLogs[newLogs.length - 1].timestamp;
+                        }
+                        
                         logDiv.scrollTop = logDiv.scrollHeight;
-                    } else if (clearTimestamp) {
-                        // If we have a clearTimestamp but no logs pass the filter, clear everything
-                        logDiv.innerHTML = '';
                     }
-                } else if (!clearTimestamp) {
-                    // Only clear if there's no clearTimestamp set
+                } else if (!clearTimestamp && !lastDisplayedTimestamp) {
+                    // Only clear if this is the first load and no logs exist
                     logDiv.innerHTML = '';
                 }
             } catch (error) {
@@ -832,11 +870,18 @@ class VRDebugServer(
                 const logDiv = document.getElementById('log');
                 logDiv.innerHTML = '';
                 
+                // Reset the last displayed timestamp to prevent showing old logs
+                lastDisplayedTimestamp = clearTimestamp;
+                
             } catch (error) {
                 console.error('Error fetching logs for clear timestamp:', error);
                 // Clear anyway even if we couldn't get the timestamp
                 const logDiv = document.getElementById('log');
                 logDiv.innerHTML = '';
+                
+                // Reset tracking variables
+                lastDisplayedTimestamp = null;
+                clearTimestamp = null;
             }
         }
         
