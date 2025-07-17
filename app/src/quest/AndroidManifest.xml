@@ -2,7 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     
     <uses-feature android:name="android.hardware.vr.headtracking" android:required="true" />
+    <!-- Hand tracking permissions -->
     <uses-permission android:name="com.oculus.permission.HAND_TRACKING" />
+    <uses-feature android:name="oculus.software.handtracking" android:required="false" />
 
     <application>
         <meta-data android:name="com.oculus.supportedDevices" 

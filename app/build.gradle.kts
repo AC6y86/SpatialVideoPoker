@@ -97,18 +97,27 @@ dependencies {
     implementation("com.meta.spatial:meta-spatial-sdk:$spatialVersion")
     implementation("com.meta.spatial:meta-spatial-sdk-toolkit:$spatialVersion")
     implementation("com.meta.spatial:meta-spatial-sdk-vr:$spatialVersion")
+    ksp("com.google.code.gson:gson:2.11.0")
     ksp("com.meta.spatial.plugin:com.meta.spatial.plugin.gradle.plugin:$spatialVersion")
+}
+
+afterEvaluate {
+    tasks.named("assembleQuestDebug") {
+        dependsOn("export")
+    }
 }
 
 // Spatial SDK configuration
 spatial {
-    allowUsageDataCollection = true
     scenes {
         exportItems {
             item {
                 projectPath.set(file("scenes/Main.metaspatial"))
-                outputPath.set(file("src/main/assets/scenes"))
+                outputPath.set(file("src/quest/assets/scenes"))
             }
+        }
+        componentGeneration {
+            outputPath.set(file("scenes"))
         }
     }
 }

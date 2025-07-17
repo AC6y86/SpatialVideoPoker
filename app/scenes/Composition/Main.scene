@@ -1,0 +1,55 @@
+entities:
+  com.meta.models.Scene:
+    - components:
+        com.meta.components.Name:
+          {}
+        com.meta.components.Scene:
+          nodes:
+            - ref:Cube
+            - ref:Environment
+      tag: Scene
+  com.meta.models.SceneNode:
+    - components:
+        com.meta.components.Animatable:
+          {}
+        com.meta.components.DocumentReference:
+          transformType: None
+          documentReference: projref:environment/Main.metaspatialobj
+        com.meta.components.Name:
+          name: Environment
+        com.meta.components.PointerNodeInverseComponent:
+          {}
+        com.meta.components.SceneNode:
+          rotation.format: Euler
+          scale:
+            - 1
+            - 1
+            - 1
+          componentVersion: 1
+        com.meta.spatial.toolkit.SupportsLocomotion:
+          {}
+      tag: Environment
+    - components:
+        com.meta.components.Animatable:
+          {}
+        com.meta.components.DocumentReference:
+          transformType: None
+          documentReference: projref:Cube/Main.metaspatialobj
+        com.meta.components.Name:
+          name: Cube
+        com.meta.components.PointerNodeInverseComponent:
+          {}
+        com.meta.components.SceneNode:
+          rotation.format: Euler
+          scale:
+            - 3.33377957
+            - 1
+            - 4.37332773
+          translation:
+            - -0.0447535515
+            - 0.327776194
+            - 0.0687096119
+          componentVersion: 1
+      tag: Cube
+metadata:
+  version: 1.33

@@ -1,6 +1,11 @@
 package com.hackathon.spatialvideopoker
 
 import android.content.Intent
+import android.net.Uri
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import com.meta.spatial.core.Entity
 import com.meta.spatial.core.Pose
 import com.meta.spatial.core.Quaternion
@@ -11,21 +16,28 @@ import com.meta.spatial.vr.VRFeature
 
 class ImmersiveActivity : AppSystemActivity() {
     
+    val activityScope = CoroutineScope(Dispatchers.Main)
+    
     override fun registerFeatures() = listOf(VRFeature(this))
     
     override fun onSceneReady() {
         super.onSceneReady()
-        
-        // Configure scene
         scene.setViewOrigin(0.0f, 0.0f, 0.0f)
-        scene.enableHolePunching(true)
-        scene.setReferenceSpace(ReferenceSpace.LOCAL_FLOOR)
         
-        // Create panel entity
-        Entity.createPanelEntity(
-            R.id.panel_main,
-            Transform(Pose(Vector3(0f, 1.3f, 2f), Quaternion(0f, 0f, 0f)))
-        )
+        activityScope.launch {
+            glXFManager.inflateGLXF(
+                Uri.parse("apk:///scenes/Composition.glxf"),
+                keyName = "scene")
+            
+            // Delay panel creation to ensure registration is complete
+            kotlinx.coroutines.delay(100)
+            Entity.createPanelEntity(
+                R.id.panel_main,
+                Transform(Pose(Vector3(0f, 1.3f, 2f), Quaternion(0f, 0f, 0f)))
+            )
+        }
+        
+        scene.updateIBLEnvironment("chromatic.env")
     }
     
     override fun registerPanels() = listOf(
