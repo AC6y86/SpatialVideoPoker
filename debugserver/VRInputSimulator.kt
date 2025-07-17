@@ -237,7 +237,7 @@ class VRInputSimulator(
             
             FileLogger.d(TAG, "Setting camera position to: (${request.x}, ${request.y}, ${request.z})")
             
-            // For position-only updates, preserve current rotation by getting current pose
+            // Enable virtual camera and preserve current rotation by getting current pose
             scene.enableVirtualCamera(true)
             val currentPose = scene.getViewerPose()
             val pose = Pose(Vector3(cameraPosition.x, cameraPosition.y, cameraPosition.z), currentPose.q)
@@ -246,6 +246,9 @@ class VRInputSimulator(
             
             // Allow SDK time to process the camera change
             delay(100)
+            
+            // Keep virtual camera enabled - user can manually unlock with button if needed
+            FileLogger.d(TAG, "Virtual camera remains enabled - use Unlock Camera button to restore VR tracking")
             
             // Get and log the actual position after update
             val actualPos = scene.getViewOrigin()
