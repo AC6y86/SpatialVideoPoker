@@ -5,6 +5,7 @@ entities:
           {}
         com.meta.components.Scene:
           nodes:
+            - ref:Panel1
             - ref:Cube
             - ref:Environment
       tag: Scene
@@ -51,5 +52,33 @@ entities:
             - 0.0687096119
           componentVersion: 1
       tag: Cube
+    - components:
+        com.meta.components.Animatable:
+          {}
+        com.meta.components.Name:
+          name: Panel1
+        com.meta.components.PointerNodeInverseComponent:
+          {}
+        com.meta.components.SceneNode:
+          rotation.data:
+            - -1.56768703
+            - 0
+            - 3.14131689
+            - 0
+          rotation.format: Euler
+          scale:
+            - 2
+            - 1.75
+            - 1
+          translation:
+            - -2.03446816e-05
+            - 0.535076976
+            - 0.0484106094
+          componentVersion: 1
+        com.meta.spatial.toolkit.Panel:
+          panel: "@id/panel_main"
+        com.meta.spatial.toolkit.PanelDimensions:
+          {}
+      tag: Panel1
 metadata:
   version: 1.33

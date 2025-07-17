@@ -41,25 +41,13 @@ class ImmersiveActivity : AppSystemActivity() {
         }
         
         activityScope.launch {
+            // Load scene with editor-placed panel
             glXFManager.inflateGLXF(
                 Uri.parse("apk:///scenes/Composition.glxf"),
                 keyName = "scene")
             
-            // Delay panel creation to ensure registration is complete
-            kotlinx.coroutines.delay(100)
-            
-            // Position panel on top face of the cube
-            // Cube position: (-0.044, 0.327, 0.068) with scale (3.33, 1, 4.37)
-            val cubeTopY = 0.327f + (1f * 0.5f) + 0.01f // cube center Y + half height + small offset
-            
-            // Rotate panel to lie flat on top of cube (facing upward)
-            // 90 degrees pitch rotation to make panel horizontal
-            val horizontalRotation = Quaternion(pitch = 90f, yaw = 0f, roll = 0f)
-            
-            Entity.createPanelEntity(
-                R.id.panel_main,
-                Transform(Pose(Vector3(-0.044f, cubeTopY, 0.068f), horizontalRotation))
-            )
+            // No need to create panel entity - it's already in the scene from the editor
+            // The panel registration will automatically link to the @id/panel_main panel
         }
         
         scene.updateIBLEnvironment("chromatic.env")

@@ -1,3 +1,6 @@
 data:
   tabs:
-    []
+    - Composition
+    - environment
+    - Cube
+  current_tab: Composition
