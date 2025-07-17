@@ -33,7 +33,7 @@ class ImmersiveActivity : AppSystemActivity() {
     
     override fun onSceneReady() {
         super.onSceneReady()
-        scene.setViewOrigin(0.0f, 0.0f, 0.0f)
+        // Camera position will be managed by debug system - don't reset to origin
         
         // Register the debug system
         if (BuildConfig.DEBUG) {
