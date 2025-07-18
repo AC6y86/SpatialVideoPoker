@@ -113,12 +113,12 @@ fun GameScreen(
                 )
             }
             
-            // Card display area with win display overlay
+            // Card display area with win display overlay - moved up closer to banner
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .padding(vertical = 8.dp)
+                    .padding(top = 4.dp, bottom = 8.dp) // Reduced top padding to move cards up
             ) {
                 // Cards - always in the same position
                 CardDisplayArea(
@@ -133,12 +133,12 @@ fun GameScreen(
                 )
             }
             
-            // Combined credit display and controls
+            // Combined credit display and controls - pushed up
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(bottom = 12.dp), // Reduced bottom padding to push up
+                verticalArrangement = Arrangement.spacedBy(12.dp) // Increased spacing between credit panel and buttons
             ) {
                 // Credit Panel
                 CreditPanel(
