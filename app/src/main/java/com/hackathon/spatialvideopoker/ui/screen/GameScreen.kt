@@ -35,11 +35,13 @@ fun GameScreen(
     val isDebugMode = true
     val gameState by viewModel.gameState.collectAsState()
     var showWinAnimation by remember { mutableStateOf(false) }
+    var winAnimationComplete by remember { mutableStateOf(true) }
     
     // Trigger win animation when payout phase starts with a win
     LaunchedEffect(gameState.gamePhase, gameState.lastWinAmount) {
         if (gameState.gamePhase == GameStateMachine.GamePhase.PAYOUT && gameState.lastWinAmount > 0) {
             showWinAnimation = true
+            winAnimationComplete = false
         }
     }
     
@@ -106,7 +108,7 @@ fun GameScreen(
                         viewModel.toggleHold(index)
                     },
                     enabled = gameState.gamePhase == GameStateMachine.GamePhase.HOLDING,
-                    showDealBanner = gameState.gamePhase == GameStateMachine.GamePhase.BETTING && gameState.dealtCards.isNotEmpty(),
+                    showDealBanner = gameState.gamePhase == GameStateMachine.GamePhase.BETTING && gameState.dealtCards.isNotEmpty() && winAnimationComplete,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -137,26 +139,23 @@ fun GameScreen(
                     onDraw = { viewModel.draw() },
                     onPaytableClick = { viewModel.togglePaytable() },
                     onSettingsClick = { viewModel.toggleSettings() },
+                    enabled = winAnimationComplete,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
         }
         
-        // Win animation is now handled by CreditPanel component
-        // This LaunchedEffect was interfering with the CreditPanel animation
-        /*
+        // Wait for CreditPanel animation to complete, then reset win state
         LaunchedEffect(gameState.lastWinAmount, gameState.gamePhase) {
             if (gameState.lastWinAmount > 0 && gameState.gamePhase == GameStateMachine.GamePhase.PAYOUT) {
-                showWinAnimation = true
-                // Wait for counter animation to complete (amount * 100ms + 1 second)  
+                // Wait for CreditPanel counter animation to complete (amount * 100ms + 1 second)  
                 val counterDuration = (gameState.lastWinAmount - 1) * 100L
-                delay(counterDuration + 1000L) // Counter duration + 1 second
-                showWinAnimation = false
-                // Reset game state to show "Click Deal to start" banner
+                delay(counterDuration + 1000L) // Counter duration + 1 second display
+                winAnimationComplete = true  // Mark animation complete before resetting
+                // Reset game state to clear win amount and show "Click Deal to start" banner
                 viewModel.resetForNextHand()
             }
         }
-        */
         
         // Reset state after losing hands
         LaunchedEffect(gameState.gamePhase, gameState.lastWinAmount) {
@@ -164,6 +163,7 @@ fun GameScreen(
                 gameState.lastWinAmount == 0 && 
                 gameState.dealtCards.isNotEmpty()) {
                 // This is a losing hand that just finished, reset to show banner
+                winAnimationComplete = true  // No animation for losing hands
                 viewModel.resetForNextHand()
             }
         }

@@ -33,6 +33,13 @@ fun CreditPanel(
     var preWinCredits by remember { mutableStateOf(credits) }
     var lastWinAmount by remember { mutableStateOf(0) }
     
+    // Keep displayCredits in sync with credits when not animating
+    LaunchedEffect(credits) {
+        if (win == 0) {
+            displayCredits = credits
+        }
+    }
+    
     // Synchronized WIN and Credits animation
     LaunchedEffect(win) {
         if (win > 0 && win != lastWinAmount) {

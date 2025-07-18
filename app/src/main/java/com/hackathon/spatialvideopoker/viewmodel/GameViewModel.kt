@@ -82,8 +82,16 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             // Play button sound
             soundManager.playSound(SoundManager.SoundEffect.BUTTON_CLICK)
             
-            // Deduct bet
-            creditManager.deductBet(bet)
+            // Deduct bet immediately when Deal is clicked
+            val creditsBefore = creditManager.getCurrentCredits()
+            val deductionSuccess = creditManager.deductBet(bet)
+            val creditsAfter = creditManager.getCurrentCredits()
+            updateMessage("Credits: $creditsBefore → $creditsAfter (bet: $bet)")
+            if (!deductionSuccess) {
+                updateMessage("Failed to deduct bet")
+                return@launch
+            }
+            updateCreditsInState()
             gameStateDao.incrementGamesPlayed()
             
             // Transition to dealing phase
@@ -324,6 +332,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             it.copy(
                 gamePhase = GameStateMachine.GamePhase.BETTING,
                 heldCardIndices = emptySet(),
+                lastWinAmount = 0,           // Reset win amount for next animation
+                lastHandRank = null,         // Reset hand rank
                 message = "Click DEAL to start"
                 // Keep dealtCards visible to show winning hand
             )

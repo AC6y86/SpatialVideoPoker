@@ -33,6 +33,7 @@ fun BettingControls(
     onDraw: () -> Unit,
     onPaytableClick: () -> Unit,
     onSettingsClick: () -> Unit,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val isBettingPhase = gamePhase == GameStateMachine.GamePhase.BETTING
@@ -45,7 +46,7 @@ fun BettingControls(
         // BET ONE button
         CasinoButton(
             text = "BET ONE",
-            enabled = isBettingPhase,
+            enabled = enabled && isBettingPhase,
             onClick = {
                 val nextBet = if (currentBet >= 5) 1 else currentBet + 1
                 onBetChange(nextBet)
@@ -59,7 +60,7 @@ fun BettingControls(
         // SEE PAYS button
         CasinoButton(
             text = "SEE PAYS",
-            enabled = true,
+            enabled = enabled,
             onClick = onPaytableClick,
             color = CasinoYellow,
             textColor = Color.Black,
@@ -70,7 +71,7 @@ fun BettingControls(
         // MAX BET button
         CasinoButton(
             text = "MAX BET",
-            enabled = isBettingPhase && credits >= 5, // Only enabled if can afford max bet
+            enabled = enabled && isBettingPhase && credits >= 5, // Only enabled if can afford max bet
             onClick = {
                 onMaxBet() // Set max bet
                 onDeal()   // Automatically deal
@@ -88,7 +89,7 @@ fun BettingControls(
                 GameStateMachine.GamePhase.HOLDING -> "DRAW"
                 else -> "..."
             },
-            enabled = (isBettingPhase && credits >= currentBet) || isHoldingPhase,
+            enabled = enabled && ((isBettingPhase && credits >= currentBet) || isHoldingPhase),
             onClick = {
                 when (gamePhase) {
                     GameStateMachine.GamePhase.BETTING -> onDeal()
