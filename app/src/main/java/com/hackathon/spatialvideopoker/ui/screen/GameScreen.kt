@@ -11,6 +11,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.ui.Alignment
 import kotlinx.coroutines.delay
 import androidx.compose.ui.Modifier
@@ -22,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.animation.core.*
 import com.hackathon.spatialvideopoker.game.GameStateMachine
 import com.hackathon.spatialvideopoker.ui.components.*
 import com.hackathon.spatialvideopoker.ui.theme.*
@@ -71,6 +73,24 @@ fun GameScreen(
                     .height(40.dp), // Fixed height to prevent layout shifts
                 contentAlignment = Alignment.Center
             ) {
+                // Flashing animation for hand name during WIN counting (when winAnimationComplete is false)
+                val isFlashingHandName = gameState.gamePhase == GameStateMachine.GamePhase.PAYOUT && 
+                                        gameState.lastWinAmount > 0 && 
+                                        !winAnimationComplete
+                val handNameAlpha by if (isFlashingHandName) {
+                    rememberInfiniteTransition(label = "hand_name_flash").animateFloat(
+                        initialValue = 0.3f,
+                        targetValue = 1f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(300),  // Slightly faster flash
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "hand_name_alpha"
+                    )
+                } else {
+                    remember { mutableStateOf(1f) }
+                }
+                
                 Text(
                     text = when {
                         gameState.gamePhase == GameStateMachine.GamePhase.DEALING -> "Dealing..."
@@ -86,7 +106,7 @@ fun GameScreen(
                     },
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
-                    color = PaytableText,
+                    color = PaytableText.copy(alpha = handNameAlpha),
                     fontFamily = FontFamily.SansSerif,
                     textAlign = TextAlign.Center,
                     letterSpacing = 0.5.sp
@@ -157,14 +177,11 @@ fun GameScreen(
             }
         }
         
-        // Reset state after losing hands
-        LaunchedEffect(gameState.gamePhase, gameState.lastWinAmount) {
-            if (gameState.gamePhase == GameStateMachine.GamePhase.BETTING && 
-                gameState.lastWinAmount == 0 && 
-                gameState.dealtCards.isNotEmpty()) {
-                // This is a losing hand that just finished, reset to show banner
-                winAnimationComplete = true  // No animation for losing hands
-                viewModel.resetForNextHand()
+        // Ensure buttons are enabled in BETTING phase
+        LaunchedEffect(gameState.gamePhase) {
+            if (gameState.gamePhase == GameStateMachine.GamePhase.BETTING) {
+                // Ensure buttons are enabled when in BETTING phase
+                winAnimationComplete = true
             }
         }
         
