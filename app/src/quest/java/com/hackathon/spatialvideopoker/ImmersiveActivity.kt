@@ -33,7 +33,12 @@ class ImmersiveActivity : AppSystemActivity() {
     
     override fun onSceneReady() {
         super.onSceneReady()
-        // Camera position will be managed by debug system - don't reset to origin
+        
+        // Set reference space for proper floor-relative tracking
+        scene.setReferenceSpace(ReferenceSpace.LOCAL_FLOOR)
+        
+        // Position camera back from panel - LOCAL_FLOOR handles height automatically
+        scene.setViewOrigin(0.0f, 0.0f, 1.56f, 180.0f)
         
         // Register the debug system
         if (BuildConfig.DEBUG) {
@@ -77,9 +82,9 @@ class ImmersiveActivity : AppSystemActivity() {
                 setClassName(applicationContext, MainActivity::class.qualifiedName!!)
             }
             config {
-                // 16:9 aspect ratio - dimensions read from scene file (2.49×1.4m)
-                layoutWidthInPx = 2560   // 16:9 resolution
-                layoutHeightInPx = 1439  // Match scene panel ratio (2.49/1.4 = 1.7786)
+                // 16:10 aspect ratio - optimized for Medium Tablet (2560×1600)
+                layoutWidthInPx = 2560   // 16:10 resolution width
+                layoutHeightInPx = 1600  // 16:10 resolution height (2560/1600 = 1.6)
                 layerConfig = LayerConfig()
                 panelShader = SceneMaterial.HOLE_PUNCH_SHADER
                 alphaMode = AlphaMode.HOLE_PUNCH
