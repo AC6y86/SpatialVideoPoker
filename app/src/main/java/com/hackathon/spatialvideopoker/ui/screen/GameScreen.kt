@@ -32,7 +32,7 @@ fun GameScreen(
     viewModel: GameViewModel = viewModel()
 ) {
     // Debug mode flag - set to true for development
-    val isDebugMode = false
+    val isDebugMode = true
     val gameState by viewModel.gameState.collectAsState()
     var showWinAnimation by remember { mutableStateOf(false) }
     
@@ -109,20 +109,6 @@ fun GameScreen(
                     showDealBanner = gameState.gamePhase == GameStateMachine.GamePhase.BETTING && gameState.dealtCards.isNotEmpty(),
                     modifier = Modifier.fillMaxWidth()
                 )
-                
-                // Win amount display positioned absolutely at bottom left of card area
-                // Always present to prevent layout shifts
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(start = 16.dp, bottom = 8.dp) // Moved down by reducing bottom padding
-                ) {
-                    WinAmountDisplay(
-                        amount = gameState.lastWinAmount,
-                        showWin = gameState.lastWinAmount > 0,
-                        modifier = Modifier
-                    )
-                }
             }
             
             // Combined credit display and controls
@@ -156,7 +142,9 @@ fun GameScreen(
             }
         }
         
-        // Win animation trigger for winning hands
+        // Win animation is now handled by CreditPanel component
+        // This LaunchedEffect was interfering with the CreditPanel animation
+        /*
         LaunchedEffect(gameState.lastWinAmount, gameState.gamePhase) {
             if (gameState.lastWinAmount > 0 && gameState.gamePhase == GameStateMachine.GamePhase.PAYOUT) {
                 showWinAnimation = true
@@ -168,6 +156,7 @@ fun GameScreen(
                 viewModel.resetForNextHand()
             }
         }
+        */
         
         // Reset state after losing hands
         LaunchedEffect(gameState.gamePhase, gameState.lastWinAmount) {

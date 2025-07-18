@@ -71,14 +71,16 @@ fun WinAmountDisplay(
         }
     }
     
-    // Always render to prevent layout shifts, use alpha for visibility
-    Text(
-        text = if (showDisplay) "WIN $displayAmount" else "WIN 0",
-        fontSize = 32.sp,
-        fontWeight = FontWeight.Bold,
-        color = Color.Yellow,
-        modifier = modifier.alpha(if (showDisplay) 1f else 0f)
-    )
+    // Only show when there's a win amount
+    if (showDisplay) {
+        Text(
+            text = "WIN $displayAmount",
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Yellow,
+            modifier = modifier
+        )
+    }
 }
 
 // Legacy function for backwards compatibility - now just triggers the display

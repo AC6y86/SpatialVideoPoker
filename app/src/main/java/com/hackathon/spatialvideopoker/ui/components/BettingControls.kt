@@ -70,8 +70,11 @@ fun BettingControls(
         // MAX BET button
         CasinoButton(
             text = "MAX BET",
-            enabled = isBettingPhase,
-            onClick = onMaxBet,
+            enabled = isBettingPhase && credits >= 5, // Only enabled if can afford max bet
+            onClick = {
+                onMaxBet() // Set max bet
+                onDeal()   // Automatically deal
+            },
             color = CasinoYellow,
             textColor = Color.Black,
             modifier = Modifier.weight(1f),
