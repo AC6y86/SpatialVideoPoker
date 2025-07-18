@@ -54,7 +54,7 @@ fun IntegratedPaytable(
                     // Hand name - left aligned
                     Box(
                         modifier = Modifier
-                            .width(140.dp)
+                            .weight(0.35f)  // Use flexible weight instead of fixed width
                             .fillMaxHeight()
                             .background(Color(0xFF000066))
                             .padding(start = 8.dp),
@@ -85,7 +85,7 @@ fun IntegratedPaytable(
                         
                         Box(
                             modifier = Modifier
-                                .weight(1f)
+                                .weight(0.13f)  // 5 columns sharing 65% of width (0.65/5 = 0.13)
                                 .fillMaxHeight()
                                 .background(
                                     when {

@@ -33,7 +33,7 @@ fun CardDisplayArea(
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth(0.85f) // Make cards take up slightly more horizontal space
+                .fillMaxWidth() // Use full width for VR panel
                 .fillMaxHeight(), // Fill available height
             horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally), // Adjust spacing between cards
             verticalAlignment = Alignment.CenterVertically

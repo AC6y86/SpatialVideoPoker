@@ -77,12 +77,9 @@ class ImmersiveActivity : AppSystemActivity() {
                 setClassName(applicationContext, MainActivity::class.qualifiedName!!)
             }
             config {
-                // Scale panel to fit on cube top surface (3.33 x 4.37)
-                // Use 80% of cube dimensions to leave some margin
-                width = 3.0f    // 80% of cube width (3.33)
-                height = 1.69f  // Maintain 16:9 aspect ratio
-                layoutWidthInPx = 1920
-                layoutHeightInPx = 1080
+                // 16:9 aspect ratio - dimensions read from scene file (2.49×1.4m)
+                layoutWidthInPx = 2560   // 16:9 resolution
+                layoutHeightInPx = 1439  // Match scene panel ratio (2.49/1.4 = 1.7786)
                 layerConfig = LayerConfig()
                 panelShader = SceneMaterial.HOLE_PUNCH_SHADER
                 alphaMode = AlphaMode.HOLE_PUNCH
