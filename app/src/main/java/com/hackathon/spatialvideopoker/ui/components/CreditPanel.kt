@@ -30,28 +30,44 @@ fun CreditPanel(
     var displayWinAmount by remember { mutableStateOf(1) }
     var showWinDisplay by remember { mutableStateOf(false) }
     var displayCredits by remember { mutableStateOf(credits) }
+    var preWinCredits by remember { mutableStateOf(credits) }
+    var lastWinAmount by remember { mutableStateOf(0) }
     
-    // Simple WIN animation that works
+    // Synchronized WIN and Credits animation
     LaunchedEffect(win) {
-        if (win > 0) {
+        if (win > 0 && win != lastWinAmount) {
+            // Capture current credits before any updates from CreditManager
+            preWinCredits = displayCredits
             showWinDisplay = true
-            displayWinAmount = 1
             val steps = win - 1
+            
+            // Both animations start with initial values
+            displayWinAmount = 1
+            displayCredits = preWinCredits
             
             if (steps > 0) {
                 for (i in 1..steps) {
-                    delay(100L) // 10 per second
+                    delay(100L)
+                    val progress = i.toFloat() / steps.toFloat()
+                    
+                    // Update both simultaneously - credits animate from preWin to preWin+win
                     displayWinAmount = i + 1
+                    displayCredits = (preWinCredits + (win * progress)).toInt()
                 }
             }
-        } else {
+            
+            // Ensure final values are exact
+            displayWinAmount = win
+            displayCredits = preWinCredits + win
+            lastWinAmount = win
+        } else if (win == 0) {
             showWinDisplay = false
+            displayCredits = credits
+            lastWinAmount = 0
+        } else {
+            // Non-animation update (like game reset)
+            displayCredits = credits
         }
-    }
-    
-    // Simple credits update (no animation for now)
-    LaunchedEffect(credits) {
-        displayCredits = credits
     }
     
     val winFlashingAlpha by rememberInfiniteTransition(label = "win_flash").animateFloat(
