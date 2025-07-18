@@ -51,7 +51,7 @@ fun GameScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp), // Add horizontal padding for VR context
+                .padding(start = 16.dp, end = 16.dp, top = 32.dp), // Add horizontal padding for VR context and top padding for extra space
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             // Integrated Paytable (always visible at top)
@@ -66,7 +66,7 @@ fun GameScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp),
+                    .height(40.dp), // Fixed height to prevent layout shifts
                 contentAlignment = Alignment.Center
             ) {
                 Text(
