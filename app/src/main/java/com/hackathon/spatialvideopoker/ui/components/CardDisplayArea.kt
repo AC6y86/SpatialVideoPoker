@@ -50,6 +50,7 @@ fun CardDisplayArea(
                         modifier = Modifier
                             .weight(1f)
                             .aspectRatio(0.7f) // Standard playing card ratio
+                            .fillMaxHeight(0.9f) // Make cards 10% smaller
                     )
                 }
             } else {
@@ -63,6 +64,7 @@ fun CardDisplayArea(
                         modifier = Modifier
                             .weight(1f)
                             .aspectRatio(0.7f)
+                            .fillMaxHeight(0.9f) // Make cards 10% smaller
                     )
                 }
             }

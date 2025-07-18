@@ -48,7 +48,7 @@ fun IntegratedPaytable(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(26.dp),
+                        .height(23.dp), // Reduced from 26dp to 23dp (about 10% shorter)
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Hand name - left aligned

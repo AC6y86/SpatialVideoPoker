@@ -54,7 +54,7 @@ fun BettingControls(
             color = CasinoYellow,
             textColor = Color.Black,
             modifier = Modifier.weight(1f),
-            height = 80.dp
+            height = 90.dp
         )
         
         // SEE PAYS button
@@ -65,7 +65,7 @@ fun BettingControls(
             color = CasinoYellow,
             textColor = Color.Black,
             modifier = Modifier.weight(1f),
-            height = 80.dp
+            height = 90.dp
         )
         
         // MAX BET button
@@ -79,7 +79,7 @@ fun BettingControls(
             color = CasinoYellow,
             textColor = Color.Black,
             modifier = Modifier.weight(1f),
-            height = 80.dp
+            height = 90.dp
         )
         
         // DEAL/DRAW button
@@ -100,7 +100,7 @@ fun BettingControls(
             color = if (isHoldingPhase) Color.Red else CasinoYellow,
             textColor = if (isHoldingPhase) Color.White else Color.Black,
             modifier = Modifier.weight(1f),
-            height = 80.dp
+            height = 90.dp
         )
     }
 }
@@ -166,11 +166,11 @@ private fun CasinoButton(
         
         Text(
             text = text,
-            fontSize = 18.sp,
+            fontSize = 20.sp,
             fontWeight = FontWeight.Black,
             color = if (enabled) textColor else Color.Gray,
             fontFamily = FontFamily.SansSerif,
-            lineHeight = 20.sp,
+            lineHeight = 22.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(bottom = 2.dp)
         )

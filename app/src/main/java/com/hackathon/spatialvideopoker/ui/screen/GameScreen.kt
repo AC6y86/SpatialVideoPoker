@@ -34,7 +34,7 @@ fun GameScreen(
     viewModel: GameViewModel = viewModel()
 ) {
     // Debug mode flag - set to true for development
-    val isDebugMode = true
+    val isDebugMode = false
     val gameState by viewModel.gameState.collectAsState()
     var showWinAnimation by remember { mutableStateOf(false) }
     var winAnimationComplete by remember { mutableStateOf(true) }
@@ -55,7 +55,7 @@ fun GameScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(start = 16.dp, end = 16.dp, top = 32.dp), // Add horizontal padding for VR context and top padding for extra space
+                .padding(start = 16.dp, end = 16.dp, top = 8.dp), // Reduced top padding to move payout table almost to top
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             // Integrated Paytable (always visible at top)
@@ -66,11 +66,12 @@ fun GameScreen(
                 modifier = Modifier.fillMaxWidth()
             )
             
-            // Banner - single line message showing current game state
+            // Banner - single line message showing current game state - moved down slightly
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(40.dp), // Fixed height to prevent layout shifts
+                    .height(40.dp) // Fixed height to prevent layout shifts
+                    .offset(y = 2.dp), // Move banner down 2 pixels
                 contentAlignment = Alignment.Center
             ) {
                 // Flashing animation for hand name during WIN counting (when winAnimationComplete is false)
@@ -113,12 +114,12 @@ fun GameScreen(
                 )
             }
             
-            // Card display area with win display overlay - moved up closer to banner
+            // Card display area with win display overlay - moved up
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .padding(top = 4.dp, bottom = 8.dp) // Reduced top padding to move cards up
+                    .padding(top = 6.dp, bottom = 8.dp) // Reduced top padding to move cards up
             ) {
                 // Cards - always in the same position
                 CardDisplayArea(
@@ -133,12 +134,12 @@ fun GameScreen(
                 )
             }
             
-            // Combined credit display and controls - pushed up
+            // Combined credit display and controls - shifted down 5 pixels
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 12.dp), // Reduced bottom padding to push up
-                verticalArrangement = Arrangement.spacedBy(12.dp) // Increased spacing between credit panel and buttons
+                    .padding(bottom = 11.dp), // Reduced bottom padding by 5dp to shift down 5 pixels
+                verticalArrangement = Arrangement.spacedBy(4.dp) // Reduced spacing to bring credit line closer to buttons
             ) {
                 // Credit Panel
                 CreditPanel(
